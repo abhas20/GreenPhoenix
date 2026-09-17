@@ -58,14 +58,26 @@ services:
       timeout: 3s
       retries: 5
 
-
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: greenphoenix-dynamodb
+    restart: unless-stopped
+    user: root
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data"
+    ports:
+      - "8001:8000"
+    volumes:
+      - dynamodb-data:/home/dynamodblocal/data
+    networks:
+      - greenphoenix-net
 
 volumes:
   opensearch-data:
     driver: local
   redis-data:
     driver: local
-
+  dynamodb-data:
+    driver: local
 
 networks:
   greenphoenix-net:
