@@ -8,6 +8,12 @@ class Settings(BaseSettings):
     APP_NAME: str = "Community Aid Navigator"
     ENVIRONMENT: str = "local"
     DEBUG: bool = True
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "greenphoenix-dev-secret-key-change-in-production-2026")
+    SESSION_COOKIE_NAME: str = "aid_session"
+    COOKIE_SECURE: bool = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+    RATE_LIMIT_TURNS_PER_MINUTE: int = 15
+    RATE_LIMIT_CASEWORKER_PER_MINUTE: int = 60
+    RATE_LIMIT_IP_PER_MINUTE: int = 80 
     
     # OpenSearch Config
     OPENSEARCH_HOST: str = os.getenv("OPENSEARCH_HOST", "http://localhost:9200")
@@ -27,7 +33,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./local_state.db")
     REDIS_URL: Optional[str] = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     CEDAR_POLICIES_PATH: str = "cedar/policies"
-
+    
     # csv / dataset paths
     CSV_AID_PROGRAMS_PATH: str = os.getenv("CSV_AID_PROGRAMS_PATH", "data/aid_programs_populated.csv")
     AUDIT_SCENARIOS_PATH: str = os.getenv("AUDIT_SCENARIOS_PATH", "data/audit_scenarios.json")
