@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "local"
     DEBUG: bool = True
     
-    
     # OpenSearch Config
     OPENSEARCH_HOST: str = os.getenv("OPENSEARCH_HOST", "http://localhost:9200")
     OPENSEARCH_INDEX_PROGRAMS: str = "aid-programs"
@@ -26,6 +25,7 @@ class Settings(BaseSettings):
     
     # Storage & Cedar
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./local_state.db")
+    REDIS_URL: Optional[str] = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     CEDAR_POLICIES_PATH: str = "cedar/policies"
 
     # csv / dataset paths

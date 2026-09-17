@@ -1,0 +1,164 @@
+[
+  {
+    "test_id": "test_en_01",
+    "scenario": "Rent Crisis Brooklyn (English)",
+    "lang": "en",
+    "profile": {
+      "preferred_language": "en",
+      "borough": "brooklyn",
+      "household_size": 1,
+      "annual_income": 24000.0,
+      "monthly_rent": 1400.0,
+      "has_disability_benefits": true,
+      "disability_benefit_types": [
+        "SSI"
+      ],
+      "primary_needs": [
+        "housing",
+        "rent"
+      ],
+      "summary": "Single adult in Brooklyn seeking emergency rent freeze and aid."
+    },
+    "user_prompt": "I live in Brooklyn alone, paying $1,400 monthly rent with an annual income of $24,000 on SSI disability benefits. I urgently need help with rent freeze and housing assistance."
+  },
+  {
+    "test_id": "test_es_01",
+    "scenario": "Rent Crisis Brooklyn (Spanish)",
+    "lang": "es",
+    "profile": {
+      "preferred_language": "es",
+      "borough": "brooklyn",
+      "household_size": 1,
+      "annual_income": 24000.0,
+      "monthly_rent": 1400.0,
+      "has_disability_benefits": true,
+      "disability_benefit_types": [
+        "SSI"
+      ],
+      "primary_needs": [
+        "housing",
+        "rent"
+      ],
+      "summary": "Adulto soltero en Brooklyn buscando asistencia de congelación de alquiler."
+    },
+    "user_prompt": "Vivo solo en Brooklyn, pago $1,400 de alquiler mensual con un ingreso anual de $24,000 con beneficios de discapacidad de SSI. Necesito urgentemente ayuda con congelación de alquiler y vivienda."
+  },
+  {
+    "test_id": "test_en_02",
+    "scenario": "Family Food & Childcare Bronx (English)",
+    "lang": "en",
+    "profile": {
+      "preferred_language": "en",
+      "borough": "bronx",
+      "household_size": 4,
+      "annual_income": 31000.0,
+      "has_children_under_5": true,
+      "primary_needs": [
+        "food",
+        "childcare"
+      ],
+      "summary": "Family of 4 with 4-year-old child in the Bronx needing food and education."
+    },
+    "user_prompt": "We are a family of 4 living in the Bronx with a 4-year-old child. Our annual income is $31,000 and we need food and childcare assistance."
+  },
+  {
+    "test_id": "test_es_02",
+    "scenario": "Family Food & Childcare Bronx (Spanish)",
+    "lang": "es",
+    "profile": {
+      "preferred_language": "es",
+      "borough": "bronx",
+      "household_size": 4,
+      "annual_income": 31000.0,
+      "has_children_under_5": true,
+      "primary_needs": [
+        "food",
+        "childcare"
+      ],
+      "summary": "Familia de 4 con niño de 4 años en el Bronx necesitando comida y educación."
+    },
+    "user_prompt": "Somos una familia de 4 en el Bronx con un niño de 4 años. Nuestro ingreso anual es de $31,000 y necesitamos ayuda con alimentos y guardería o pre-kinder."
+  },
+  {
+    "test_id": "test_en_03",
+    "scenario": "Senior Rent Freeze Queens (English)",
+    "lang": "en",
+    "profile": {
+      "preferred_language": "en",
+      "borough": "queens",
+      "household_size": 1,
+      "age": 66,
+      "annual_income": 28000.0,
+      "monthly_rent": 1300.0,
+      "primary_needs": [
+        "housing",
+        "rent"
+      ],
+      "summary": "Senior citizen 66 years old in Queens seeking rent increase freeze."
+    },
+    "user_prompt": "I am 66 years old living alone in Queens with an income of $28,000 and monthly rent of $1,300. I need to freeze my rent."
+  },
+  {
+    "test_id": "test_es_03",
+    "scenario": "Senior Rent Freeze Queens (Spanish)",
+    "lang": "es",
+    "profile": {
+      "preferred_language": "es",
+      "borough": "queens",
+      "household_size": 1,
+      "age": 66,
+      "annual_income": 28000.0,
+      "monthly_rent": 1300.0,
+      "primary_needs": [
+        "housing",
+        "rent"
+      ],
+      "summary": "Adulto mayor de 66 años en Queens buscando congelar el alquiler."
+    },
+    "user_prompt": "Tengo 66 años y vivo solo en Queens con un ingreso de $28,000 y un alquiler mensual de $1,300. Necesito ayuda para congelar mi alquiler."
+  },
+  {
+    "test_id": "test_en_04",
+    "scenario": "Emergency Cash Assistance Manhattan (English)",
+    "lang": "en",
+    "profile": {
+      "preferred_language": "en",
+      "borough": "manhattan",
+      "household_size": 1,
+      "annual_income": 12000.0,
+      "monthly_rent": 800.0,
+      "has_disability_benefits": true,
+      "disability_benefit_types": [
+        "SSDI"
+      ],
+      "primary_needs": [
+        "cash",
+        "financial"
+      ],
+      "summary": "Low income adult in Manhattan needing emergency cash support."
+    },
+    "user_prompt": "I live in Manhattan on SSDI disability with $12,000 annual income and rent of $800. I need emergency cash and financial support."
+  },
+  {
+    "test_id": "test_es_04",
+    "scenario": "Emergency Cash Assistance Manhattan (Spanish)",
+    "lang": "es",
+    "profile": {
+      "preferred_language": "es",
+      "borough": "manhattan",
+      "household_size": 1,
+      "annual_income": 12000.0,
+      "monthly_rent": 800.0,
+      "has_disability_benefits": true,
+      "disability_benefit_types": [
+        "SSDI"
+      ],
+      "primary_needs": [
+        "cash",
+        "financial"
+      ],
+      "summary": "Adulto de bajos ingresos en Manhattan que necesita apoyo financiero de emergencia."
+    },
+    "user_prompt": "Vivo en Manhattan con beneficios de discapacidad SSDI, ingreso anual de $12,000 y alquiler de $800. Necesito dinero de emergencia y asistencia económica."
+  }
+]
