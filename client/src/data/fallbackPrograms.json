@@ -1,0 +1,217 @@
+[
+  {
+    "program_id": "nyc-snap-001",
+    "name": "Supplemental Nutrition Assistance Program (SNAP)",
+    "organization": "NYC Human Resources Administration (HRA)",
+    "category": "food",
+    "region": "nyc",
+    "description": "Monthly food assistance loaded onto an electronic EBT card, usable at most grocery stores and farmers markets across New York City.",
+    "income_threshold": "Varies by household size and income (up to 130%-200% FPL); some non-citizens may qualify.",
+    "required_documents": [
+      "Photo Identification",
+      "Proof of Household Income",
+      "Rent Receipt or Lease Agreement",
+      "Recent Utility Bills"
+    ],
+    "application_url": "https://a069-access.nyc.gov/ACCESSNYC/application.do",
+    "application_method": "online",
+    "contact_phone": "718-557-1399",
+    "languages_supported": ["en", "es"]
+  },
+  {
+    "program_id": "nyc-cashassist-001",
+    "name": "Cash Assistance (Family Assistance & Safety Net)",
+    "organization": "NYC Human Resources Administration (HRA)",
+    "category": "financial",
+    "region": "nyc",
+    "description": "Monthly cash support for families and individuals in need, often paid via debit card or directly to landlords for rent relief.",
+    "income_threshold": "Based on gross income, resources, and household family size.",
+    "required_documents": [
+      "Government Photo ID",
+      "Proof of NYC Residence",
+      "Proof of Household Income",
+      "Birth Certificates for Dependents"
+    ],
+    "application_url": "https://a069-access.nyc.gov/ACCESSNYC/application.do",
+    "application_method": "online",
+    "contact_phone": "718-557-1399",
+    "languages_supported": ["en", "es"]
+  },
+  {
+    "program_id": "nyc-drie-001",
+    "name": "Disability Rent Increase Exemption (DRIE)",
+    "organization": "NYC Department of Finance (DOF)",
+    "category": "housing",
+    "region": "nyc",
+    "description": "Freezes rent for tenants with a qualifying disability benefit (SSI, SSDI, VA disability); landlord receives a property tax credit for the difference.",
+    "income_threshold": "Household income $50,000/yr or less; rent must exceed one-third of monthly income.",
+    "required_documents": [
+      "Government ID",
+      "Proof of residence and lease",
+      "Proof of household income",
+      "Disability benefit award letter (SSI/SSDI/VA)"
+    ],
+    "application_url": "https://www.nyc.gov/assets/finance/jump/nyctap.html",
+    "application_method": "online",
+    "contact_phone": "929-252-7242",
+    "languages_supported": ["en"]
+  },
+  {
+    "program_id": "nyc-scrie-001",
+    "name": "Senior Citizen Rent Increase Exemption (SCRIE)",
+    "organization": "NYC Dept. of Finance / HPD",
+    "category": "housing",
+    "region": "nyc",
+    "description": "Freezes the rent for head-of-household tenants age 62+ living in rent-regulated apartments, preventing landlord rent increases.",
+    "income_threshold": "Household income $50,000/yr or less; rent must exceed one-third of monthly income.",
+    "required_documents": [
+      "Proof of age (62+) and identity",
+      "Proof of rent / current & previous lease",
+      "Proof of household income"
+    ],
+    "application_url": "https://www.nyc.gov/site/rentfreeze/tools/nyc-tap.page",
+    "application_method": "online",
+    "contact_phone": "311",
+    "languages_supported": ["en"]
+  },
+  {
+    "program_id": "nyc-section8-001",
+    "name": "Section 8 Housing Choice Voucher",
+    "organization": "NYC Housing Authority (NYCHA)",
+    "category": "housing",
+    "region": "nyc",
+    "description": "Voucher that covers part of rent for lower-income families renting from private landlords; tenant pays roughly 30-40% of income toward rent.",
+    "income_threshold": "Household of 1: ~$59,400/yr; household of 4: ~$84,800/yr.",
+    "required_documents": [
+      "Government Identification",
+      "Proof of Income",
+      "Citizenship or Eligible Immigration Status"
+    ],
+    "application_url": "http://www1.nyc.gov/site/nycha/section-8/about-section-8.page",
+    "application_method": "phone",
+    "contact_phone": "718-707-7771",
+    "languages_supported": ["en", "es"]
+  },
+  {
+    "program_id": "nyc-headstart-001",
+    "name": "Head Start / Early Head Start",
+    "organization": "U.S. Dept. of Health & Human Services",
+    "category": "childcare",
+    "region": "nyc",
+    "description": "Free early childhood education, meals, and health screenings for low-income families with children age 5 and under.",
+    "income_threshold": "At or below federal poverty guidelines (e.g. ~$33,000/yr for household of 4).",
+    "required_documents": [
+      "Proof of income or public benefits receipt (SNAP/SSI)",
+      "Child's age verification / birth certificate",
+      "Immunization records"
+    ],
+    "application_url": "https://headstart.gov/how-apply",
+    "application_method": "online",
+    "languages_supported": ["en", "es"]
+  },
+  {
+    "program_id": "nyc-prek-001",
+    "name": "Pre-K for All",
+    "organization": "NYC Department of Education",
+    "category": "childcare",
+    "region": "nyc",
+    "description": "Free full-day, play-based Pre-K program for four-year-olds at public schools, DOE-run centers, and community partner organizations.",
+    "income_threshold": "No income requirement; universal for all 4-year-old NYC residents.",
+    "required_documents": [
+      "Child's proof of age/birth record",
+      "Two proofs of NYC residence",
+      "Immunization records"
+    ],
+    "application_url": "https://www.schools.nyc.gov/enrollment/enroll-grade-by-grade/pre-k",
+    "application_method": "online",
+    "contact_phone": "311",
+    "languages_supported": ["en", "es", "zh", "ru", "bn", "ht", "ur", "ar"]
+  },
+  {
+    "program_id": "nyc-eitc-001",
+    "name": "Earned Income Tax Credit (EITC)",
+    "organization": "NYC DCWP / IRS",
+    "category": "financial",
+    "region": "national",
+    "description": "Federal, state, and city tax credit for working individuals and families with low to moderate income; averages about $2,300 combined.",
+    "income_threshold": "Single without children: up to ~$19,104/yr; married with children: up to ~$68,675/yr.",
+    "required_documents": [
+      "W-2s or 1099 income records",
+      "Social Security numbers for filer and all dependents"
+    ],
+    "application_url": "https://www.nyc.gov/site/dca/talk-money/file-your-taxes.page",
+    "application_method": "online",
+    "contact_phone": "311",
+    "languages_supported": ["en", "es"]
+  },
+  {
+    "program_id": "nyc-ctc-001",
+    "name": "Child Tax Credit (CTC)",
+    "organization": "NYC DCWP / IRS",
+    "category": "financial",
+    "region": "national",
+    "description": "Federal and NY State tax credit for families raising children, worth up to ~$3,200 per child under 4 and ~$2,700 for ages 4-16.",
+    "income_threshold": "Up to $200,000/yr (single) or $400,000/yr (married filing jointly).",
+    "required_documents": [
+      "Social Security numbers for filer and qualifying child dependents",
+      "Prior year tax returns"
+    ],
+    "application_url": "https://www.nyc.gov/site/dca/talk-money/file-your-taxes.page",
+    "application_method": "online",
+    "contact_phone": "311",
+    "languages_supported": ["en", "es"]
+  },
+  {
+    "program_id": "nyc-qhp-001",
+    "name": "Qualified Health Plans (QHP)",
+    "organization": "NY State of Health",
+    "category": "health",
+    "region": "statewide",
+    "description": "Subsidized private health insurance marketplace plans covering preventive care and pre-existing conditions at low or zero cost.",
+    "income_threshold": "Subsidy amount depends on household income; lower incomes may qualify for Medicaid or Essential Plan.",
+    "required_documents": [
+      "Proof of NY State residency",
+      "Immigration / citizenship status documentation",
+      "Tax return or income proof"
+    ],
+    "application_url": "https://nystateofhealth.ny.gov/",
+    "application_method": "online",
+    "contact_phone": "855-355-5777",
+    "languages_supported": ["en", "es"]
+  },
+  {
+    "program_id": "nyc-star-001",
+    "name": "School Tax Relief Program (STAR)",
+    "organization": "NYS Dept. of Taxation / NYC DOF",
+    "category": "financial",
+    "region": "statewide",
+    "description": "Annual credit that lowers property taxes for eligible homeowners; Enhanced STAR gives a larger benefit to seniors 65+.",
+    "income_threshold": "Basic STAR: household income $500,000/yr or less; Enhanced STAR: ~$110,750/yr or less.",
+    "required_documents": [
+      "Social Security numbers of all owners",
+      "Prior federal or state tax return",
+      "Proof of primary homeownership and residency"
+    ],
+    "application_url": "https://www.tax.ny.gov/pit/property/homeowner-benefit-portal.htm",
+    "application_method": "online",
+    "contact_phone": "518-457-2036",
+    "languages_supported": ["en"]
+  },
+  {
+    "program_id": "nyc-compass-001",
+    "name": "Comprehensive After School System (COMPASS NYC)",
+    "organization": "NYC Dept. of Youth & Community Development",
+    "category": "enrichment",
+    "region": "nyc",
+    "description": "Free afterschool programs for K-12 students offering homework help, STEM, arts, and sports, typically 3 hours/day.",
+    "income_threshold": "No income requirement; open to all NYC students K-12.",
+    "required_documents": [
+      "Proof of child's identity (birth certificate or school record)",
+      "Emergency contact form"
+    ],
+    "application_url": "https://discoverdycd.dycdconnect.nyc/",
+    "application_method": "online",
+    "contact_phone": "800-246-4646",
+    "languages_supported": ["en", "es"]
+  }
+]
