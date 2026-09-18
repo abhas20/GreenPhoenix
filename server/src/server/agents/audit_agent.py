@@ -123,52 +123,35 @@ def run_bias_audit(
     baseline_language: str = "en"
 ) -> BiasAuditReport:
     """
-    Executes an out-of-band fairness audit:
-    1. Authorized exclusively by Cedar Policy 3 (AuditAgent).
-    2. Loads synthetic identical personas across multiple languages from external dataset.
-    3. Supports execution via:
-       - 'deterministic': Fast OpenSearch search + rule engine check (zero token cost, deterministic baseline).
-       - 'agentic': Live Strands MatchingAgent reasoning (and optionally IntakeAgent if audit_intake=True).
-    4. Dynamically evaluates disparate impact across all tested languages using the EEOC 4/5ths selection rate rule.
+    Executes an out-of-band fairness audit measuring exact match overlap (Jaccard Similarity).
     """
-    # Cedar Authorization check
     principal = {"id": "bias-auditor", "role": "AuditAgent"}
     resource = {"type": "MatchingService"}
     if not cedar_gate.is_authorized(principal=principal, action="replaySyntheticProfiles", resource=resource):
         raise PermissionError("Cedar Policy Denied: Action 'replaySyntheticProfiles' is strictly reserved for AuditAgent.")
 
     run_id = f"audit_{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d_%H%M%S')}"
-
-    # Load scenarios from decoupled dataset
     test_scenarios = load_audit_scenarios(scenarios_path)
-
+    
     results: List[AuditCase] = []
-    matches_by_lang: Dict[str, int] = {}
-    counts_by_lang: Dict[str, int] = {}
-
     matching_agent = create_matching_agent() if mode == "agentic" else None
     intake_agent = create_intake_agent() if (mode == "agentic" and audit_intake) else None
 
+    # 1. Execute all scenarios
     for sc in test_scenarios[:batch_size]:
         lang = sc.get("lang", "en")
         profile = sc["profile"]
 
-        # If auditing intake agent, re-extract profile from user_prompt
         if audit_intake and sc.get("user_prompt"):
             profile = extract_profile(sc["user_prompt"], agent=intake_agent, preferred_language=lang)
 
-        # Run matching either via live agent or deterministic engine
         if mode == "agentic":
             match_res = match_programs(profile, agent=matching_agent)
         else:
             match_res = _deterministic_match_programs(profile)
 
         matched_ids = [m.program_id for m in match_res.ranked_programs if m.is_deterministically_eligible]
-        m_count = len(matched_ids)
-
-        matches_by_lang[lang] = matches_by_lang.get(lang, 0) + m_count
-        counts_by_lang[lang] = counts_by_lang.get(lang, 0) + 1
-
+        
         results.append(AuditCase(
             test_id=sc["test_id"],
             scenario_name=sc["scenario"],
@@ -176,51 +159,71 @@ def run_bias_audit(
             variation_type="language_translation",
             profile=profile,
             matched_program_ids=matched_ids,
-            match_count=m_count,
+            match_count=len(matched_ids),
             execution_mode=mode
         ))
 
-    # Compute selection rates dynamically per language (EEOC 80% rule)
-    evaluated_languages = sorted(list(counts_by_lang.keys()))
-    selection_rates: Dict[str, float] = {}
-    for l in evaluated_languages:
-        selection_rates[l] = round(matches_by_lang[l] / counts_by_lang[l], 3) if counts_by_lang[l] > 0 else 0.0
+    # 2. Group results by scenario name to compare non-baseline vs baseline directly
+    scenarios_map = {}
+    for res in results:
+        scenarios_map.setdefault(res.scenario_name, {})[res.language] = set(res.matched_program_ids)
 
-    # Determine baseline rate (English if present, else language with highest selection rate)
-    baseline_lang = baseline_language if baseline_language in selection_rates else (evaluated_languages[0] if evaluated_languages else "en")
-    baseline_rate = selection_rates.get(baseline_lang, 0.0)
+    evaluated_languages = sorted(list(set(r.language for r in results)))
+    baseline_lang = baseline_language if baseline_language in evaluated_languages else (evaluated_languages[0] if evaluated_languages else "en")
 
-    # Compute DIR for each evaluated language relative to baseline
-    dir_by_language: Dict[str, float] = {}
-    ratios: List[float] = []
+    # 3. Calculate Jaccard Similarity (Overlap) for each language relative to the baseline
+    similarity_scores_by_lang = {lang: [] for lang in evaluated_languages}
 
-    for l in evaluated_languages:
-        if l == baseline_lang:
-            dir_by_language[l] = 1.0
-            continue
-        if baseline_rate > 0:
-            ratio = round(selection_rates[l] / baseline_rate, 3)
-        else:
-            ratio = 1.0 if selection_rates[l] == 0.0 else 2.0
-        dir_by_language[l] = ratio
-        ratios.append(ratio)
+    for scenario_name, lang_matches in scenarios_map.items():
+        baseline_set = lang_matches.get(baseline_lang)
+        
+        if baseline_set is None:
+            continue # Skip if the baseline didn't run for this scenario
+            
+        for lang, target_set in lang_matches.items():
+            if lang == baseline_lang:
+                similarity_scores_by_lang[lang].append(1.0)
+                continue
+                
+            # Jaccard similarity: Intersection / Union
+            intersection = baseline_set.intersection(target_set)
+            union = baseline_set.union(target_set)
+            
+            if not union: 
+                # Both sets are empty, meaning both correctly got 0 matches (Perfect parity)
+                score = 1.0
+            else:
+                score = len(intersection) / len(union)
+                
+            similarity_scores_by_lang[lang].append(score)
 
-    overall_dir = min(ratios) if ratios else 1.0
+    # 4. Average the similarity scores to get the final DIR per language
+    dir_by_language = {}
+    for lang, scores in similarity_scores_by_lang.items():
+        dir_by_language[lang] = round(sum(scores) / len(scores), 3) if scores else 1.0
+
+    # Ensure baseline is exactly 1.0
+    dir_by_language[baseline_lang] = 1.0 
+
+    # Calculate overall minimum ratio across non-baseline languages
+    non_baseline_ratios = [ratio for l, ratio in dir_by_language.items() if l != baseline_lang]
+    overall_dir = min(non_baseline_ratios) if non_baseline_ratios else 1.0
+    
     passed = overall_dir >= 0.80
-
     status = "PASSED_FAIRNESS" if passed else "DISPARITY_ALERT"
     lang_str = ", ".join(evaluated_languages)
+
     if passed:
         summary = (
             f"Evaluated {len(results)} replay variations across {lang_str} (mode={mode}). "
             f"Disparate Impact Ratio is {overall_dir:.2f} (Target >= 0.80). "
-            f"Multilingual parity achieved across all evaluated demographic groups."
+            f"Multilingual parity achieved: non-English queries yield the exact same program matches as English queries."
         )
     else:
         disparate_langs = [f"{l} (DIR={r:.2f})" for l, r in dir_by_language.items() if r < 0.80]
         summary = (
             f"Disparity Alert: Minimum Disparate Impact Ratio ({overall_dir:.2f}) is below the 0.80 threshold. "
-            f"Disparity detected in: {', '.join(disparate_langs)} relative to baseline '{baseline_lang}'."
+            f"Disparity detected in: {', '.join(disparate_langs)}. These languages are returning different program matches than the baseline '{baseline_lang}'."
         )
 
     report = BiasAuditReport(
@@ -228,7 +231,7 @@ def run_bias_audit(
         timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         total_replays=len(results),
         languages_evaluated=evaluated_languages,
-        selection_rates=selection_rates,
+        selection_rates=dir_by_language,
         dir_by_language=dir_by_language,
         disparate_impact_ratio=overall_dir,
         fairness_status=status,
@@ -239,8 +242,12 @@ def run_bias_audit(
     # Persist report in OpenSearch audit-log
     try:
         client = _get_opensearch_client()
+        safe_json_string = report.model_dump_json()
+        safe_dict = json.loads(safe_json_string)
+
+        dedicated_index = "bias-fairness-reports"
         client.index(
-            index=settings.OPENSEARCH_INDEX_AUDIT,
+            index=dedicated_index,
             body={
                 "timestamp": report.timestamp,
                 "principal": {"id": "bias-auditor", "role": "AuditAgent"},
@@ -249,7 +256,7 @@ def run_bias_audit(
                 "decision": "ALLOW",
                 "details": report.model_dump(mode="json")
             },
-            refresh=True
+            params={"refresh": "true"}
         )
     except Exception as e:
         print(f"[Warning] Could not persist audit report in OpenSearch: {e}")

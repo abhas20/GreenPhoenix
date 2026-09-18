@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from strands import Agent
 from server.core.llm import get_model
-from server.tools.document_tools import get_program_requirements
+from server.tools.document_tools import get_programs_requirements
 
 
 class DocumentItem(BaseModel):
@@ -32,26 +32,23 @@ DOCUMENT_SYSTEM_PROMPT = """
 You are the Application Documentation Specialist for the Community Aid Navigator.
 
 Your objective:
-1. For each program the applicant wants to apply to, retrieve required proof documents using `get_program_requirements`.
-2. If a lookup fails (found=False) or applications_open is False, do NOT include that program in the checklist or
+1. Retrieve required proof documents for ALL selected programs at once using `get_programs_requirements`.
+2. If a program's lookup fails (found=False) or applications_open is False, do NOT include that program in the checklist or
    hardship statement -- list it in `excluded_programs` with a short reason instead.
 3. Group duplicate or common documents together (e.g. Photo ID, Proof of Income/Lease) into a single consolidated checklist.
 4. Provide practical, empathetic tips for how an applicant in crisis can obtain or present these documents.
-5. Draft a clear, polite personal hardship statement that reflects the applicant's actual situation, not a generic template.
-6. `selected_programs` must reflect the programs you were actually able to draft for -- never claim a program
-   was included if you didn't retrieve its requirements.
+5. Draft a clear, polite personal hardship statement that reflects the applicant's actual situation.
+6. `selected_programs` must reflect the programs you were actually able to draft for.
 """
-
 
 def create_document_agent() -> Agent:
     model = get_model()
     return Agent(
         name="DocumentAgent",
         system_prompt=DOCUMENT_SYSTEM_PROMPT,
-        tools=[get_program_requirements],
+        tools=[get_programs_requirements],  # Provide the new plural tool
         model=model,
     )
-
 
 def generate_application_pack(
     program_ids: List[str],
@@ -98,20 +95,24 @@ def generate_application_pack(
                 f"Program IDs: {allowed_ids}\n"
                 f"Applicant Context/Summary: {applicant_summary}\n\n"
                 f"Instructions:\n"
-                f"1. Retrieve the required documents for each program using `get_program_requirements`.\n"
-                f"2. If a lookup returns found=False or applications_open is False, exclude that program and note it in excluded_programs.\n"
+                f"1. Call `get_programs_requirements` ONCE passing the entire list of Program IDs.\n"
+                f"2. If a lookup returns found=False or applications_open is False, exclude it and note it in excluded_programs.\n"
                 f"3. Consolidate overlapping documents into a clean checklist with practical, compassionate tips.\n"
-                f"4. Compose an empathetic, compelling sample hardship statement tailored specifically to this applicant's situation.\n"
-                f"5. Provide clear, encouraging, actionable next steps.\n"
-                f"6. Return the ApplicationDraft structured output tool."
+                f"4. Compose an empathetic hardship statement tailored specifically to this applicant's situation.\n"
+                f"5. Return the ApplicationDraft structured output tool."
             )
             result = doc_agent(prompt, structured_output_model=ApplicationDraft)
+            
             if isinstance(result.structured_output, ApplicationDraft) and result.structured_output.consolidated_checklist:
                 draft = result.structured_output
-                # Flexible check: verify each allowed program is covered by ID or Name
-                known_names = {pid: get_program_requirements(pid).get("name", pid) for pid in allowed_ids}
+                
+                # Fetch batch requirements just to validate what the LLM did (fast because OpenSearch is quick)
+                reqs_batch = get_programs_requirements(program_ids=allowed_ids)
+                known_names = {pid: reqs_batch.get(pid, {}).get("name", pid) for pid in allowed_ids}
+                
                 covered = set(draft.selected_programs)
                 missing = [pid for pid in allowed_ids if pid not in covered and known_names.get(pid) not in covered]
+                
                 if missing:
                     print(f"[DocumentAgent] LLM omitted programs without flagging them: {missing}. Falling back to deterministic template.")
                 else:
@@ -124,18 +125,19 @@ def generate_application_pack(
     fallback.excluded_programs = pre_excluded + fallback.excluded_programs
     return fallback
 
-
 def _deterministic_generate_application_pack(
     program_ids: List[str],
     applicant_summary: str = "",
 ) -> ApplicationDraft:
-    """Deterministic fallback for offline mode or API unavailability."""
     docs_map: Dict[str, List[str]] = {}
     program_names: List[str] = []
     excluded: List[ExcludedProgram] = []
 
+    # Make exactly ONE call to the database instead of looping
+    requirements_batch = get_programs_requirements(program_ids=program_ids)
+
     for pid in program_ids:
-        req = get_program_requirements(program_id=pid)
+        req = requirements_batch.get(pid, {})
 
         if not req.get("found", False):
             excluded.append(ExcludedProgram(program_id=pid, reason=req.get("error", "Could not retrieve program requirements.")))
@@ -149,6 +151,7 @@ def _deterministic_generate_application_pack(
         for d in req.get("required_documents", []):
             docs_map.setdefault(d, []).append(pname)
 
+    # ... (the rest of the checklist logic and tips_catalog remain exactly the same) ...
     checklist: List[DocumentItem] = []
     tips_catalog = {
         "photo id": "Driver's license, NYC Municipal ID (IDNYC), or passport.",
@@ -173,15 +176,14 @@ def _deterministic_generate_application_pack(
         ))
 
     situation_clause = f" {applicant_summary.strip()}" if applicant_summary.strip() else " Due to unforeseen financial and housing hardship, my household requires critical community aid to maintain stable shelter, nutrition, and essential living expenses."
-
+    
+    statement = ""
     if program_names:
         statement = (
             f"I am writing to formally submit my application for {', '.join(program_names)}."
             f"{situation_clause} "
             f"I have assembled the attached verification documents and appreciate your prompt review."
         )
-    else:
-        statement = ""
 
     next_steps = []
     if program_names:

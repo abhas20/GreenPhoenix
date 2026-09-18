@@ -13,8 +13,11 @@ class ProgramMatch(BaseModel):
     organization: str
     category: str
     match_confidence: float = Field(ge=0.0, le=1.0, description="Confidence score from 0.0 to 1.0")
-    is_deterministically_eligible: bool
-    plain_language_reason: str = Field(description="Clear explanation of why this program fits the applicant's situation")
+    is_deterministically_eligible: Optional[bool] = Field(
+        default=None,
+        description="True if confirmed eligible, False if disqualified, None if unverifiable (e.g. missing age or disability information)"
+    )
+    plain_language_reason: str = Field(description="Clear explanation of why this program fits the applicant's situation or what information is needed")
     passed_criteria: List[str]
     potential_blockers: List[str]
     unverifiable_checks: List[str] = Field(default_factory=list)
@@ -34,8 +37,12 @@ You are the Benefits Matching Specialist for the Community Aid Navigator.
 Your objective:
 1. Search OpenSearch for relevant aid programs using `hybrid_search_programs`.
 2. For each candidate, evaluate their hard eligibility criteria with `check_program_eligibility` (income limits, age, household size, disability rules).
-3. Do NOT hallucinate eligibility: If `check_program_eligibility` indicates failing reasons, explain them clearly to the applicant.
-4. Rank the confirmed eligible programs by relevance and urgency, providing a compassionate, plain-language explanation of why each one fits.
+3. Populate `is_deterministically_eligible`:
+   - Set to `true` if `check_program_eligibility` returned eligible=True.
+   - Set to `false` if `check_program_eligibility` returned eligible=False (disqualified).
+   - Set to `null` if `check_program_eligibility` returned eligible=None (applicant is missing required info like age or disability status).
+4. If `is_deterministically_eligible` is null, list the missing requirements in `unverifiable_checks` so the applicant can be asked for them.
+5. Rank confirmed eligible programs (true) first, followed by potentially eligible programs (null), and explain clearly what criteria passed or what information is needed.
 """
 
 
@@ -61,14 +68,20 @@ def match_programs(profile: ApplicantProfile, agent: Optional[Agent] = None) -> 
 
     if matcher.model:
         try:
+            income_display = f"${profile.annual_income:,.0f}" if profile.annual_income is not None else "Unknown"
+            rent_display = f"${profile.monthly_rent:,.0f}" if profile.monthly_rent is not None else "Unknown"
+            hh_display = str(profile.household_size) if profile.household_size is not None else "Unknown"
+            age_display = str(profile.age) if profile.age is not None else "Unknown"
+
             prompt = (
                 f"Evaluate aid programs for this applicant:\n"
                 f"- Location / Borough: {profile.borough or 'NYC'}\n"
-                f"- Household Size: {profile.household_size if profile.household_size is not None else 'Unknown'}\n"
-                f"- Annual Income: ${profile.annual_income:,.0f} if profile.annual_income is not None else 'Unknown'\n"
-                f"- Monthly Rent: ${profile.monthly_rent:,.0f} if profile.monthly_rent is not None else 'Unknown'\n"
-                f"- Age: {profile.age if profile.age is not None else 'Unknown'}\n"
+                f"- Household Size: {hh_display}\n"
+                f"- Annual Income: {income_display}\n"
+                f"- Monthly Rent: {rent_display}\n"
+                f"- Age: {age_display}\n"
                 f"- Disability Benefits: {profile.has_disability_benefits}\n"
+                f"- Disability Types: {profile.disability_benefit_types}\n"
                 f"- Children Under 5: {profile.has_children_under_5}\n"
                 f"- Homeowner: {profile.is_homeowner}\n"
                 f"- Primary Needs: {', '.join(profile.primary_needs) if profile.primary_needs else 'Emergency aid'}\n"
@@ -125,21 +138,32 @@ def _deterministic_match_programs(profile: ApplicantProfile) -> MatchingResult:
             monthly_rent=profile.monthly_rent
         )
 
-        raw_eligible = rule_check["eligible"]
-        is_eligible = bool(raw_eligible is True)
+        raw_eligible = rule_check["eligible"]  # True, False, or None
+        is_eligible = raw_eligible
         raw_score = cand.get("score", 1.0)
-        confidence = min(1.0, max(0.4, (raw_score / 5.0) if is_eligible else (raw_score / 10.0)))
 
-        if is_eligible:
+        # Proportional confidence based on eligibility status:
+        # - Confirmed eligible: 0.60 to 1.00
+        # - Unverifiable / pending info: 0.40 to 0.75
+        # - Confirmed ineligible by hard rules: 0.05 to 0.25 (no artificial 40% floor)
+        if is_eligible is True:
+            confidence = min(1.0, max(0.60, raw_score / 4.0))
+        elif is_eligible is None:
+            confidence = min(0.75, max(0.40, raw_score / 6.0))
+        else:
+            confidence = min(0.25, max(0.05, raw_score / 15.0))
+
+        if is_eligible is True:
             reason = f"You qualify based on your reported income and location in {profile.borough or 'NYC'}."
             if profile.has_disability_benefits and "drie" in pid:
                 reason = "Your disability benefit makes you eligible for a complete rent freeze under DRIE."
             elif profile.age and profile.age >= 62 and "scrie" in pid:
                 reason = "Your age (62+) qualifies you for the SCRIE senior citizen rent freeze."
-        elif raw_eligible is None:
-            reason = f"Potentially eligible, but additional verification required: {'; '.join(rule_check['unverifiable_checks'])}"
+        elif is_eligible is None:
+            unverified_str = "; ".join(rule_check.get("unverifiable_checks", []))
+            reason = f"Potentially eligible, but additional verification required: {unverified_str}"
         else:
-            reason = f"Potential conflict: {'; '.join(rule_check['failing_reasons'])}"
+            reason = f"Not eligible: {'; '.join(rule_check.get('failing_reasons', []))}"
 
         matches.append(ProgramMatch(
             program_id=pid,
@@ -156,7 +180,12 @@ def _deterministic_match_programs(profile: ApplicantProfile) -> MatchingResult:
             application_method=cand.get("application_method", "online")
         ))
 
-    matches.sort(key=lambda m: (m.is_deterministically_eligible, m.match_confidence), reverse=True)
+    # Sort safely: Confirmed eligible (1) > Unverified (0) > Ineligible (-1), then by confidence
+    def _rank_key(m: ProgramMatch):
+        elig_rank = 1 if m.is_deterministically_eligible is True else (0 if m.is_deterministically_eligible is None else -1)
+        return (elig_rank, m.match_confidence)
+
+    matches.sort(key=_rank_key, reverse=True)
 
     return MatchingResult(
         ranked_programs=matches,

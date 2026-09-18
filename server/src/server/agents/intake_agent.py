@@ -92,7 +92,12 @@ def _heuristic_extract(user_text: str, preferred_language: str = "en") -> Applic
 
     # Income detection
     income = None
-    inc_match = re.search(r"\$([0-9,]+)", user_text) or re.search(r"([0-9]{2,3})k\b", text_lower)
+    inc_match = (
+        re.search(r"\$([0-9,]+)", user_text)
+        or re.search(r"([0-9]{2,3})k\b", text_lower)
+        or re.search(r"(?:income|earn|make|salary|making|earning|earns|makes)(?:\s+is|\s+of)?\s*\$?([0-9,]+)", text_lower)
+        or re.search(r"\b([0-9]{4,6})\s*(?:a year|per year|annual|annually)\b", text_lower)
+    )
     if inc_match:
         val_str = inc_match.group(1).replace(",", "")
         try:
@@ -103,8 +108,11 @@ def _heuristic_extract(user_text: str, preferred_language: str = "en") -> Applic
     # Monthly rent detection -- keyword-anchored so it doesn't grab an
     # unrelated dollar figure (e.g. income) that happens to appear first.
     rent = None
-    rent_match = re.search(r"\$([0-9,]+)\s*(?:per month|/month|monthly)", text_lower) \
-        or re.search(r"rent(?:\s+is|\s+of)?\s*\$([0-9,]+)", text_lower)
+    rent_match = (
+        re.search(r"\$([0-9,]+)\s*(?:per month|/month|monthly)", text_lower)
+        or re.search(r"rent(?:\s+is|\s+of)?\s*\$?([0-9,]+)", text_lower)
+        or re.search(r"pay\s*\$?([0-9,]+)\s*(?:for|in)?\s*rent", text_lower)
+    )
     if rent_match:
         rent_str = rent_match.group(1).replace(",", "")
         try:
@@ -114,7 +122,11 @@ def _heuristic_extract(user_text: str, preferred_language: str = "en") -> Applic
 
     # Age detection
     age = None
-    age_match = re.search(r"\bage\s+(\d{1,2})\b", text_lower) or re.search(r"\bi'?m\s+(\d{1,2})\s+years?\s+old\b", text_lower)
+    age_match = (
+        re.search(r"\bage(?:\s+is)?\s+(\d{1,2})\b", text_lower)
+        or re.search(r"\bi'?m\s+(\d{1,2})\s*(?:years?\s*old)?\b", text_lower)
+        or re.search(r"\bi am\s+(\d{1,2})\s*(?:years?\s*old)?\b", text_lower)
+    )
     if age_match:
         try:
             age = int(age_match.group(1))
@@ -123,14 +135,19 @@ def _heuristic_extract(user_text: str, preferred_language: str = "en") -> Applic
 
     # Household size detection
     household_size = None
-    hh_match = re.search(r"\b(\d{1,2})\s*(?:people|person|members?)\s+in\s+(?:my|the)\s+household\b", text_lower) \
-        or re.search(r"\bhousehold\s+of\s+(\d{1,2})\b", text_lower) \
-        or re.search(r"\bfamily\s+of\s+(\d{1,2})\b", text_lower)
-    if hh_match:
-        try:
-            household_size = int(hh_match.group(1))
-        except ValueError:
-            pass
+    if any(w in text_lower for w in ["live alone", "single person", "just me", "by myself"]):
+        household_size = 1
+    else:
+        hh_match = (
+            re.search(r"\b(\d{1,2})\s*(?:people|person|members?)\s+in\s+(?:my|the)\s+household\b", text_lower)
+            or re.search(r"\bhousehold\s+of\s+(\d{1,2})\b", text_lower)
+            or re.search(r"\bfamily\s+of\s+(\d{1,2})\b", text_lower)
+        )
+        if hh_match:
+            try:
+                household_size = int(hh_match.group(1))
+            except ValueError:
+                pass
 
     # Needs
     needs = []
@@ -143,7 +160,14 @@ def _heuristic_extract(user_text: str, preferred_language: str = "en") -> Applic
     if any(w in text_lower for w in ["cash", "money", "income"]):
         needs.append("financial")
 
-    disability = any(w in text_lower for w in ["disability", "ssi", "ssdi"]) or None
+    # Disability detection (supporting 3-state: True, False, None)
+    if any(w in text_lower for w in ["no disability", "not disabled", "no disabilities", "don't have disability", "dont have disability"]):
+        disability = False
+    elif any(w in text_lower for w in ["disability", "disabled", "ssi", "ssdi", "va disability"]):
+        disability = True
+    else:
+        disability = None
+
     benefit_types = []
     if "ssi" in text_lower:
         benefit_types.append("SSI")

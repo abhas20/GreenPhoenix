@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from strands import tool
 from opensearchpy import OpenSearch, RequestError, ConnectionError as OSConnectionError
 
@@ -21,52 +21,73 @@ def _get_opensearch_client() -> OpenSearch:
 
 
 @tool(
-    name="get_program_requirements",
-    description="Fetches required documents, application portal URL, and instructions for a specific aid program.",
+    name="get_programs_requirements",
+    description="Fetches required documents, application portal URL, and instructions for MULTIPLE aid programs at once.",
 )
-def get_program_requirements(program_id: str) -> Dict[str, Any]:
+def get_programs_requirements(program_ids: List[str]) -> Dict[str, Dict[str, Any]]:
     """
-    Retrieves required verification documents (IDs, leases, tax forms) and application methods.
+    Retrieves required verification documents for multiple programs in a single database call.
 
     Args:
-        program_id: The program ID (e.g. 'nyc-snap-001', 'nyc-drie-001').
+        program_ids: A list of program IDs (e.g. ['nyc-snap-001', 'nyc-drie-001']).
 
     Returns:
-        Dictionary with:
-          'found' (bool -- False means the lookup failed, NOT that no docs are needed),
-          'name', 'organization', 'required_documents', 'application_url',
-          'application_method', 'contact_phone', 'applications_open', and 'rules_need_review'.
+        A dictionary mapping each program_id to its requirements dictionary.
     """
     client = _get_opensearch_client()
+    results = {}
+
+    if not program_ids:
+        return results
+
     try:
-        doc = client.get(index=settings.OPENSEARCH_INDEX_PROGRAMS, id=program_id)
+        # Use mget (multi-get) to fetch all docs in one network request
+        response = client.mget(
+            index=settings.OPENSEARCH_INDEX_PROGRAMS,
+            body={"ids": program_ids}
+        )
     except (OSConnectionError, RequestError, Exception) as e:
-        return {
-            "found": False,
-            "program_id": program_id,
-            "name": program_id,
-            "organization": "",
-            "error": f"Failed to retrieve requirements: {e}",
-            "required_documents": [],
-            "application_url": "",
-            "application_method": "online",
-            "contact_phone": "",
-            "applications_open": None,
-            "rules_need_review": True,
+        # If the entire request fails, mark all requested IDs as found=False
+        for pid in program_ids:
+            results[pid] = {
+                "found": False,
+                "program_id": pid,
+                "name": pid,
+                "error": f"Failed to retrieve requirements: {e}",
+                "required_documents": [],
+                "applications_open": None,
+            }
+        return results
+
+    # Process the batch response
+    for doc in response.get("docs", []):
+        pid = doc.get("_id")
+        
+        if not doc.get("found", False):
+            results[pid] = {
+                "found": False,
+                "program_id": pid,
+                "name": pid,
+                "error": "Program ID not found in database.",
+                "required_documents": [],
+                "applications_open": None,
+            }
+            continue
+
+        src = doc.get("_source", {})
+        rules = src.get("eligibility_rules", {})
+
+        results[pid] = {
+            "found": True,
+            "program_id": pid,
+            "name": src.get("name", pid),
+            "organization": src.get("organization", ""),
+            "required_documents": src.get("required_documents", []),
+            "application_url": src.get("application_url", ""),
+            "application_method": src.get("application_method", "online"),
+            "contact_phone": src.get("contact_phone", ""),
+            "applications_open": rules.get("applications_open", True),
+            "rules_need_review": bool(rules.get("needs_review", False)),
         }
 
-    src = doc.get("_source", {})
-    rules = src.get("eligibility_rules", {})
-
-    return {
-        "found": True,
-        "program_id": program_id,
-        "name": src.get("name", program_id),
-        "organization": src.get("organization", ""),
-        "required_documents": src.get("required_documents", []),
-        "application_url": src.get("application_url", ""),
-        "application_method": src.get("application_method", "online"),
-        "contact_phone": src.get("contact_phone", ""),
-        "applications_open": rules.get("applications_open", True),
-        "rules_need_review": bool(rules.get("needs_review", False)),
-    }
+    return results

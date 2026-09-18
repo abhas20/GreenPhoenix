@@ -8,6 +8,7 @@ from server.core.cedar_gate import cedar_gate
 
 
 _client: Optional[OpenSearch] = None
+_pipeline_ready: bool = False
 HYBRID_SEARCH_PIPELINE = "hybrid-norm-pipeline"
 
 
@@ -33,6 +34,11 @@ def ensure_hybrid_search_pipeline(client: OpenSearch) -> None:
     (as in the original version) doesn't correct for that scale mismatch.
     Call this once at startup / after index setup, not on every search.
     """
+    global _pipeline_ready
+
+    if _pipeline_ready:
+        return
+    
     try:
         client.transport.perform_request(
             "PUT",
@@ -52,9 +58,17 @@ def ensure_hybrid_search_pipeline(client: OpenSearch) -> None:
                 ],
             },
         )
+        _pipeline_ready = True
     except RequestError as e:
-        # Pipeline likely already exists -- not fatal, just log it.
-        print(f"[Info] hybrid search pipeline setup: {e}")
+        if e.error == "resource_already_exists_exception":
+            _pipeline_ready = True
+        else:
+            _pipeline_ready = False
+            print(f"[Error] Failed to create hybrid search pipeline: {e}")
+
+    except Exception as e:
+        _pipeline_ready = False
+        print(f"[Error] Unexpected error while creating hybrid search pipeline: {e}")
 
 
 @tool(

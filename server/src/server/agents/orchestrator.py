@@ -11,7 +11,7 @@ from server.agents.matching_agent import create_matching_agent, match_programs, 
 from server.agents.document_agent import create_document_agent, generate_application_pack, ApplicationDraft
 from server.tools.search_tools import hybrid_search_programs as _raw_search
 from server.tools.eligibility_tools import check_program_eligibility as _raw_check_eligibility
-from server.tools.document_tools import get_program_requirements as _raw_get_requirements
+from server.tools.document_tools import get_programs_requirements as _raw_get_requirements
 
 log = logging.getLogger(__name__)
 
@@ -26,6 +26,8 @@ class SessionState(BaseModel):
     history: List[Dict[str, str]] = Field(default_factory=list)
     last_matched_snapshot: Optional[Dict[str, Any]] = None
     pii_vault: Dict[str, str] = Field(default_factory=dict)
+    clarification_attempts: int = 0
+
 
 
 class SessionStore:
@@ -91,14 +93,16 @@ class NavigatorResponse(BaseModel):
 
 
 NAVIGATOR_SYSTEM_PROMPT = """
-You are the Lead Community Aid Navigator, a compassionate, highly knowledgeable, and empowering advocate helping New York City residents navigate public benefits and crisis aid programs.
+You are the Lead Community Aid Navigator, a compassionate advocate helping NYC residents navigate public benefits.
 
 Your role:
-1. Warmly and clearly answer any questions the user has about their aid eligibility, program details, document requirements, application processes, or why they did or did not qualify for specific programs.
-2. Ground your explanations in official program rules: Use your search/eligibility/requirements tools if you need to look up specific criteria or program details.
-3. Be reassuring, non-judgmental, and practical. When explaining potential blockers (like age minimums or income thresholds), suggest realistic alternatives or caseworker consultations.
-4. If a program's eligibility is unverifiable (not confirmed True or False), NEVER state it as confirmed or excluded -- say plainly what information is still needed.
-5. Keep answers conversational, empathetic, and structured (use bullet points when listing steps or documents).
+1. Warmly answer questions about eligibility, program details, or application processes.
+2. Ground your explanations in official rules using your tools.
+3. Be reassuring, non-judgmental, and practical.
+4. If eligibility is unverifiable, NEVER state it as confirmed or excluded -- state exactly what info is missing.
+
+Applicant Context (from current session state):
+{state_context}
 """
 
 
@@ -121,25 +125,39 @@ def _merge_profiles(base: ApplicantProfile, update: ApplicantProfile) -> Applica
             combined = list(dict.fromkeys(data.get("primary_needs", []) + v))
             data["primary_needs"] = combined
         elif v is not None and k not in ("missing_critical_fields", "clarification_question", "summary"):
+            # Protect against LLMs returning empty strings or "unknown" instead of null
+            if isinstance(v, str) and v.strip().lower() in ["", "unknown", "none", "null"]:
+                continue
             data[k] = v
 
     missing = []
-    if data.get("annual_income") is None:
+    
+    # Trust the Intake Agent if it explicitly flagged fields as missing
+    llm_flagged_missing = update.missing_critical_fields or []
+    
+    if "income" in llm_flagged_missing or "annual_income" in llm_flagged_missing:
         missing.append("income")
-    if data.get("borough") is None:
+    elif data.get("annual_income") is None:
+        missing.append("income")
+        
+    if "borough" in llm_flagged_missing:
         missing.append("borough")
+    elif not data.get("borough"):  
+        missing.append("borough")
+
     data["missing_critical_fields"] = missing
 
     if not missing:
         data["clarification_question"] = None
     elif update.clarification_question:
         data["clarification_question"] = update.clarification_question
+    else:
+        data["clarification_question"] = "Could you please share your borough and approximate annual household income so we can find exact matching aid?"
 
     if update.summary and update.summary not in ("New applicant", "Unknown", ""):
         data["summary"] = update.summary
 
     return ApplicantProfile(**data)
-
 
 _MATCH_RELEVANT_FIELDS = (
     "annual_income", "borough", "monthly_rent", "household_size",
@@ -154,235 +172,110 @@ def _profile_match_snapshot(profile: ApplicantProfile) -> Dict[str, Any]:
 
 
 def _make_session_scoped_tools(principal_id: str, principal_role: str, org_id: Optional[str]):
-    """
-    Builds fresh @tool-wrapped closures for this specific session/turn, with
-    the REAL principal baked in server-side. The LLM never sees or controls
-    principal_id/role/org_id as parameters -- it can't spoof them, and Cedar
-    always evaluates against who's actually talking, not a tool default.
-    """
-
+    """Builds auth-injected tools for this specific turn."""
     @tool(name="hybrid_search_programs", description="Performs hybrid semantic vector and keyword search across open aid programs.")
     def _search(query: str, limit: int = 5, include_closed: bool = False) -> List[Dict[str, Any]]:
-        return _raw_search(
-            query=query, limit=limit,
-            principal_id=principal_id, principal_role=principal_role, org_id=org_id,
-            include_closed=include_closed,
-        )
+        return _raw_search(query, limit, principal_id, principal_role, org_id, include_closed)
 
-    @tool(name="check_program_eligibility", description="Evaluates hard deterministic eligibility rules for a program. Result is True/False/None -- None means unverifiable, not ineligible.")
-    def _check_eligibility(
-        program_id: str,
-        annual_income: Optional[float] = None,
-        household_size: Optional[int] = None,
-        age: Optional[int] = None,
-        region: Optional[str] = None,
-        has_disability_benefits: Optional[bool] = None,
-        disability_benefit_types: Optional[List[str]] = None,
-        has_children: Optional[bool] = None,
-        is_homeowner: Optional[bool] = None,
-        monthly_rent: Optional[float] = None,
-    ) -> Dict[str, Any]:
-        return _raw_check_eligibility(
-            program_id=program_id,
-            principal_id=principal_id, principal_role=principal_role, org_id=org_id,
-            annual_income=annual_income, household_size=household_size, age=age, region=region,
-            has_disability_benefits=has_disability_benefits, disability_benefit_types=disability_benefit_types,
-            has_children=has_children, is_homeowner=is_homeowner, monthly_rent=monthly_rent,
-        )
+    @tool(name="check_program_eligibility", description="Evaluates deterministic eligibility rules. Returns True/False/None.")
+    def _check_eligibility(program_id: str, annual_income: Optional[float] = None, household_size: Optional[int] = None, age: Optional[int] = None, region: Optional[str] = None, has_disability_benefits: Optional[bool] = None, disability_benefit_types: Optional[List[str]] = None, has_children: Optional[bool] = None, is_homeowner: Optional[bool] = None, monthly_rent: Optional[float] = None) -> Dict[str, Any]:
+        return _raw_check_eligibility(program_id, principal_id, principal_role, org_id, annual_income, household_size, age, region, None, has_disability_benefits, disability_benefit_types, has_children, is_homeowner, monthly_rent)
 
-    @tool(name="get_program_requirements", description="Fetches required documents and application info for a program.")
-    def _get_requirements(program_id: str) -> Dict[str, Any]:
-        return _raw_get_requirements(program_id=program_id)
+    @tool(name="get_programs_requirements", description="Fetches required documents and application info for MULTIPLE programs.")
+    def _get_requirements(program_ids: List[str]) -> Dict[str, Any]:
+        return _raw_get_requirements(program_ids)
 
     return [_search, _check_eligibility, _get_requirements]
 
+MAX_CLARIFICATION_ATTEMPTS = 2
 
 class CommunityAidOrchestrator:
-    """
-    Manager orchestrating Intake, Matching, and Document sub-agents.
-
-    Deployment-agnostic by design: no in-process state that would break on
-    Lambda's ephemeral containers or on multiple concurrent instances.
-    - Session state lives in SessionStore (Redis), not in this object.
-    - Sub-agents are created FRESH per turn, not reused as singletons --
-      Strands Agents accumulate their own message history by default, and a
-      shared long-lived agent instance would leak one user's conversation
-      into another's context the moment two sessions run concurrently.
-    This class itself can be instantiated once per request (cheap) or once
-    per process (also fine) -- it holds no per-user state either way.
-    """
-
     def __init__(self, session_store: Optional[SessionStore] = None):
         self.store = session_store or SessionStore()
 
-    def reset_session(self, session_id: str) -> None:
-        self.store.reset(session_id)
-
-    def process_user_turn(
-        self,
-        user_message: str,
-        session_id: str = "session_default",
-        principal_id: str = "unknown",
-        principal_role: str = "PublicApplicant",
-        org_id: Optional[str] = None,
-    ) -> NavigatorResponse:
-        try:
-            return self._process_user_turn(user_message, session_id, principal_id, principal_role, org_id)
-        except Exception as e:
-            log.exception(f"[Orchestrator] Unhandled error processing turn for session {session_id}: {e}")
-            return NavigatorResponse(
-                session_id=session_id,
-                reply_message=(
-                    "I'm having trouble processing that right now. Nothing was lost -- "
-                    "please try again in a moment, or reach out to a caseworker if this keeps happening."
-                ),
-                clarification_needed=False,
-                applicant_profile=ApplicantProfile(summary="Error recovering profile"),
-                matching_result=None,
-                application_draft=None,
-            )
-
-    def _process_user_turn(
-        self,
-        user_message: str,
-        session_id: str,
-        principal_id: str,
-        principal_role: str,
-        org_id: Optional[str],
-    ) -> NavigatorResponse:
+    def process_user_turn(self, user_message: str, session_id: str, principal_id: str, principal_role: str, org_id: Optional[str]) -> NavigatorResponse:
         session = self.store.get(session_id)
-
-        # PII Sanitization
         sanitized_text, turn_vault = sanitizer.sanitize(user_message)
         session.pii_vault.update(turn_vault)
-
-        # Fresh, stateless Intake agent for this turn only.
-        intake_agent = create_intake_agent()
-        new_profile = extract_profile(sanitized_text, agent=intake_agent, preferred_language=session.applicant_profile.preferred_language)
-        session.applicant_profile = _merge_profiles(session.applicant_profile, new_profile)
+        
+        # 1. Intake Phase (Safe Execution)
+        try:
+            intake_agent = create_intake_agent()
+            new_profile = extract_profile(sanitized_text, agent=intake_agent, preferred_language=session.applicant_profile.preferred_language)
+            session.applicant_profile = _merge_profiles(session.applicant_profile, new_profile)
+        except Exception as e:
+            log.error(f"[Orchestrator] Intake failed: {e}")
+            
         profile = session.applicant_profile
-
         is_question = _is_question_or_inquiry(sanitized_text)
 
-        # Clarification check for critical fields
-        if profile.missing_critical_fields and session.matching_result is None:
-            reply = profile.clarification_question or (
-                "To help connect you with the right NYC programs, could you share your borough and approximate income?"
-            )
-            return self._finish_turn(session, user_message, reply, clarification_needed=True, sanitized_text=sanitized_text)
+        # 2. Clarification Loop
+        if profile.missing_critical_fields and not session.matching_result:
+            if session.clarification_attempts < MAX_CLARIFICATION_ATTEMPTS:
+                session.clarification_attempts += 1
+                reply = profile.clarification_question or "Could you share your borough and approximate income to help find exact matches?"
+                return self._finish_turn(session, user_message, reply, True, sanitized_text)
 
-        # Re-run matching only if something that actually affects
-        # eligibility changed since the last time we matched -- not just
-        # because the field was mentioned again with the same value.
+        # 3. Matching & Drafting Phase
         current_snapshot = _profile_match_snapshot(profile)
-        should_run_matching = (
-            not profile.missing_critical_fields
-            and (session.matching_result is None or current_snapshot != session.last_matched_snapshot)
-        )
-
-        if should_run_matching:
-            matching_agent = create_matching_agent()
-            match_res = match_programs(profile, agent=matching_agent)
-            session.matching_result = match_res
-            session.last_matched_snapshot = current_snapshot
-
-            confirmed = [m for m in match_res.ranked_programs if m.is_deterministically_eligible is True]
-            unverified = [m for m in match_res.ranked_programs if m.is_deterministically_eligible is None]
-
-            if confirmed:
-                eligibility_map = {m.program_id: {"eligible": m.is_deterministically_eligible} for m in match_res.ranked_programs}
-                top_program_ids = [m.program_id for m in confirmed[:3]]
-                document_agent = create_document_agent()
-                session.application_draft = generate_application_pack(
-                    program_ids=top_program_ids,
-                    applicant_summary=profile.summary,
-                    eligibility_by_program=eligibility_map,
-                    agent=document_agent,
-                )
-            elif unverified and not is_question:
-                # Some programs are ONE missing
-                # field away from a confirmed match -- this is the
-                # Matching -> Intake feedback loop: ask for what's needed
-                # instead of silently dropping these programs or telling
-                # the applicant they don't qualify.
-                missing_bits = sorted({
-                    reason for m in unverified for reason in getattr(m, "potential_blockers", [])
-                })
-                if missing_bits:
-                    return self._finish_turn(
-                        session, user_message,
-                        "You may qualify for a few more programs, but I need a bit more information first: "
-                        + "; ".join(missing_bits[:3]) + ". Could you share that?",
-                        clarification_needed=True,
-                        sanitized_text=sanitized_text,
-                    )
-
-        # Formulate response
-        reply = ""
-
-        if is_question:
-            reply = self._answer_question(session, profile, sanitized_text, principal_id, principal_role, org_id)
-
-        if not reply:
-            reply = self._summarize_match_status(session)
-
-        return self._finish_turn(session, user_message, reply, clarification_needed=False, sanitized_text=sanitized_text)
-
-    def _answer_question(
-        self,
-        session: SessionState,
-        profile: ApplicantProfile,
-        sanitized_text: str,
-        principal_id: str,
-        principal_role: str,
-        org_id: Optional[str],
-    ) -> str:
-        model = get_model()
-        if model:
+        if not session.matching_result or current_snapshot != session.last_matched_snapshot:
             try:
-                tools = _make_session_scoped_tools(principal_id, principal_role, org_id)
-                navigator_agent = Agent(
-                    name="CommunityAidNavigator",
-                    system_prompt=NAVIGATOR_SYSTEM_PROMPT,
-                    tools=tools,
-                    model=model,
-                )
+                session.matching_result = match_programs(profile, agent=create_matching_agent())
+                session.last_matched_snapshot = current_snapshot
+                
+                confirmed = [m for m in session.matching_result.ranked_programs if m.is_deterministically_eligible is True]
+                unverified = [m for m in session.matching_result.ranked_programs if m.is_deterministically_eligible is None]
 
-                matched_summary = "None yet"
-                if session.matching_result:
-                    matched_summary = "\n".join([
-                        f"- {m.name} ({m.program_id}): Eligible={m.is_deterministically_eligible}, "
-                        f"Passed={m.passed_criteria}, Blockers={m.potential_blockers}, Reason={m.plain_language_reason}"
-                        for m in session.matching_result.ranked_programs
-                    ])
-
-                docs_summary = "None yet"
-                if session.application_draft:
-                    docs_summary = ", ".join([d.document_name for d in session.application_draft.consolidated_checklist])
-
-                nav_prompt = (
-                    f"Applicant Message: {sanitized_text}\n\n"
-                    f"Current Applicant Profile:\n"
-                    f"- Borough: {profile.borough}\n"
-                    f"- Household Size: {profile.household_size}\n"
-                    f"- Annual Income: ${profile.annual_income if profile.annual_income is not None else 0:,.0f}\n"
-                    f"- Monthly Rent: ${profile.monthly_rent if profile.monthly_rent is not None else 0:,.0f}\n"
-                    f"- Disability Benefits: {profile.has_disability_benefits}\n"
-                    f"- Age: {profile.age}\n"
-                    f"- Primary Needs: {profile.primary_needs}\n\n"
-                    f"Evaluated Aid Programs:\n{matched_summary}\n\n"
-                    f"Application Documents Prepared: {docs_summary}\n\n"
-                    f"Instructions: Answer the applicant's question with empathy, precision, and clarity. "
-                    f"Use tools to look up rules or requirements if needed. Be warm, supportive, and practical. "
-                    f"If a program's eligibility is None (unverifiable), say what's still needed rather than "
-                    f"stating it as confirmed or excluded."
-                )
-                agent_res = navigator_agent(nav_prompt)
-                return str(agent_res).strip()
+                if confirmed:
+                    session.clarification_attempts = 0
+                    eligibility_map = {m.program_id: {"eligible": True} for m in confirmed}
+                    session.application_draft = generate_application_pack(
+                        program_ids=[m.program_id for m in confirmed[:3]],
+                        applicant_summary=profile.summary,
+                        eligibility_by_program=eligibility_map,
+                        agent=create_document_agent()
+                    )
+                elif unverified and not is_question and session.clarification_attempts < MAX_CLARIFICATION_ATTEMPTS:
+                    missing_bits = list(set(b.strip() for m in unverified for b in getattr(m, "unverifiable_checks", []) + getattr(m, "potential_blockers", []) if b.strip()))
+                    if missing_bits:
+                        session.clarification_attempts += 1
+                        reply = f"You may qualify for {unverified[0].name}, but I need to confirm: {'; '.join(missing_bits[:2])}. Could you share that?"
+                        return self._finish_turn(session, user_message, reply, True, sanitized_text)
             except Exception as e:
-                log.warning(f"[Orchestrator] Navigator agent error, falling back to deterministic reply: {e}")
+                log.error(f"[Orchestrator] Matching/Drafting failed: {e}")
 
-        return self._deterministic_question_reply(sanitized_text, session)
+        # 4. Question Answering / Summarization
+        reply = self._answer_question(session, profile, sanitized_text, principal_id, principal_role, org_id) if is_question else self._summarize_match_status(session)
+        return self._finish_turn(session, user_message, reply, False, sanitized_text)
+
+    def _answer_question(self, session: SessionState, profile: ApplicantProfile, sanitized_text: str, principal_id: str, principal_role: str, org_id: Optional[str]) -> str:
+        model = get_model()
+        if not model:
+            return self._deterministic_question_reply(sanitized_text, session)
+
+        try:
+            # Inject lightweight context string instead of the massive Pydantic dump
+            state_context = f"Matched: {len(session.matching_result.ranked_programs) if session.matching_result else 0} programs. "
+            if session.application_draft:
+                state_context += f"Drafted checklist for {len(session.application_draft.selected_programs)} programs."
+
+            navigator_agent = Agent(
+                name="CommunityAidNavigator",
+                system_prompt=NAVIGATOR_SYSTEM_PROMPT.format(state_context=state_context),
+                tools=_make_session_scoped_tools(principal_id, principal_role, org_id),
+                model=model,
+                # messages=session.history
+            )
+
+            # Pass the conversation history natively via Strands SDK
+            agent_res = navigator_agent(
+                sanitized_text,
+                messages=session.history
+            )
+            return str(agent_res).strip()
+        except Exception as e:
+            log.warning(f"[Orchestrator] Navigator agent error, falling back: {e}")
+            return self._deterministic_question_reply(sanitized_text, session)
 
     def _summarize_match_status(self, session: SessionState) -> str:
         if not session.matching_result:
@@ -400,9 +293,14 @@ class CommunityAidOrchestrator:
             )
         if unverified:
             names = [m.name for m in unverified]
+            missing_details = []
+            for m in unverified:
+                missing_details.extend(getattr(m, "unverifiable_checks", []))
+            clean_details = list(dict.fromkeys([d.strip() for d in missing_details if d.strip()]))
+            detail_str = f" (specifically: {'; '.join(clean_details[:2])})" if clean_details else ""
             return (
                 f"I found {len(unverified)} program(s) you might qualify for ({', '.join(names)}), but I still need "
-                f"a bit more information to confirm. Let me know more about your situation and I'll check again."
+                f"a bit more information to confirm{detail_str}. Let me know more about your situation and I'll check again."
             )
         return (
             "I searched our aid programs, but none of the current matches satisfy the hard eligibility rules "
@@ -417,9 +315,9 @@ class CommunityAidOrchestrator:
             for p in session.matching_result.ranked_programs:
                 if p.program_id.lower() in q_lower or p.name.lower() in q_lower or ("scrie" in q_lower and "scrie" in p.program_id) or ("drie" in q_lower and "drie" in p.program_id):
                     if p.is_deterministically_eligible is None:
+                        needed = "; ".join(p.unverifiable_checks or p.potential_blockers or ["additional details"])
                         replies.append(
-                            f"Regarding {p.name}: I cannot confirm eligibility yet -- still need: "
-                            f"{'; '.join(p.potential_blockers)}."
+                            f"Regarding {p.name}: I cannot confirm eligibility yet -- still need: {needed}."
                         )
                     elif p.potential_blockers:
                         replies.append(f"Regarding {p.name}: Potential blockers noted include: {'; '.join(p.potential_blockers)}. Your passed criteria were: {'; '.join(p.passed_criteria)}.")

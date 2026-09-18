@@ -194,10 +194,14 @@ def require_cedar(action: str, resolver_or_static: Union[str, Dict[str, Any], Re
                 resource["sessionOwnerId"] = principal.id
                 resource["id"] = principal.id
 
+        effective_action = action
+        if principal.role == "Caseworker" and action in ["readOwnSession", "deleteOwnSession"]:
+            effective_action = "readApplicantRecord"
+
         principal_dict = principal.to_dict()
         is_allowed = cedar_gate.is_authorized(
             principal=principal_dict,
-            action=action,
+            action=effective_action,
             resource=resource,
             session_id=principal.id
         )

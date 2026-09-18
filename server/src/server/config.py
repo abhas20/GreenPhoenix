@@ -1,7 +1,9 @@
 import os
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class Settings(BaseSettings):
     # App Config
@@ -24,7 +26,7 @@ class Settings(BaseSettings):
     MODEL_PROVIDER: str = os.getenv("MODEL_PROVIDER", "gemini")
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY", None)
     BEDROCK_REGION: str = os.getenv("AWS_REGION", "us-east-1")
-    BEDROCK_MODEL_ID: str = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
+    BEDROCK_MODEL_ID: str = os.getenv("BEDROCK_MODEL_ID", "google.gemma-3-27b-it")
     PRIMARY_LLM_MODEL: str = "gemini-2.5-flash"
     EMBEDDING_MODEL: str = "gemini-embedding-001"
     EMBEDDING_DIMENSION: int = 768

@@ -197,7 +197,7 @@ class CedarGate:
             self.opensearch.index(
                 index=settings.OPENSEARCH_INDEX_AUDIT,
                 body=log_doc,
-                refresh=False
+                params={"refresh": True}
             )
         except Exception as e:
             # Audit log failures shouldn't crash authorization in offline mode
