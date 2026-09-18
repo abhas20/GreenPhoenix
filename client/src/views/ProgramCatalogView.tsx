@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, Calculator, FileText, Loader2, Sparkles } from "lucide-react";
 import type { ProgramDocument } from "../types/program";
 import { programService } from "../services/programService";
@@ -14,6 +15,8 @@ const CATEGORIES = ["All", "housing", "food", "financial", "utilities", "childca
 export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
   initialProgramId,
 }) => {
+  const [searchParams] = useSearchParams();
+  const effectiveProgramId = searchParams.get("id") || initialProgramId;
   const [query, setQuery] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [programs, setPrograms] = useState<ProgramDocument[]>(FALLBACK_PROGRAMS);
@@ -36,13 +39,13 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
       });
   }, []);
 
-  // Auto-open if initialProgramId is provided
+  // Auto-open if effectiveProgramId is provided
   useEffect(() => {
-    if (initialProgramId) {
-      const match = programs.find((p) => p.program_id === initialProgramId);
+    if (effectiveProgramId) {
+      const match = programs.find((p) => p.program_id === effectiveProgramId);
       if (match) setSelectedForTest(match);
     }
-  }, [initialProgramId, programs]);
+  }, [effectiveProgramId, programs]);
 
   // Search logic
   const handleSearch = async (searchTerm: string) => {

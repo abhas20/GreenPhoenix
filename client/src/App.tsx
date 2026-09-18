@@ -1,19 +1,38 @@
-import React, { useState } from "react";
-import { AuthProvider } from "./context/AuthContext";
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider, useLanguage } from "./context/LanguageContext";
 import { Navbar } from "./components/shared/Navbar";
+import { ProtectedRoute } from "./components/shared/ProtectedRoute";
+
 import { HomeView } from "./views/HomeView";
 import { ProgramCatalogView } from "./views/ProgramCatalogView";
 import { NavigatorView } from "./views/NavigatorView";
+import { AuthView } from "./views/AuthView";
+import { CaseworkerView } from "./views/CaseworkerView";
+import { AnalystView } from "./views/AnalystView";
+import { AdminView } from "./views/AdminView";
 
-const MainContent: React.FC = () => {
-  const [currentView, setCurrentView] = useState<string>("home");
-  const [selectedProgramId, setSelectedProgramId] = useState<string | undefined>(undefined);
+/**
+ * Route guard that restricts Crisis Intake exclusively to Public Applicants.
+ * Authenticated staff (Caseworker, Analyst, Admin) are redirected to their operational portals.
+ */
+const CrisisRoute: React.FC = () => {
+  const { user, role } = useAuth();
+  if (user && role !== "PublicApplicant") {
+    if (role === "Caseworker") return <Navigate to="/caseworker" replace />;
+    if (role === "Analyst") return <Navigate to="/analyst" replace />;
+    if (role === "Admin") return <Navigate to="/admin" replace />;
+  }
+  return <NavigatorView />;
+};
+
+const MainLayout: React.FC = () => {
   const { currentLanguage, isTranslationActive } = useLanguage();
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-slate-950 text-slate-100 w-full max-w-full overflow-x-hidden">
-      <Navbar currentView={currentView} onNavigate={setCurrentView} />
+      <Navbar />
 
       {/* Language translation active alert bar if user selected non-English */}
       {isTranslationActive && (
@@ -31,59 +50,58 @@ const MainContent: React.FC = () => {
         </div>
       )}
 
-      {/* Main View Display Container */}
+      {/* Main View Router Container */}
       <main className="flex-1 flex flex-col w-full max-w-full overflow-x-hidden min-h-0">
-        {currentView === "home" && (
-          <HomeView
-            onNavigate={setCurrentView}
-            onSelectProgram={(progId) => {
-              setSelectedProgramId(progId);
-              setCurrentView("programs");
-            }}
+        <Routes>
+          {/* Public Citizen Routes */}
+          <Route path="/" element={<HomeView />} />
+          <Route path="/crisis" element={<CrisisRoute />} />
+          <Route path="/programs" element={<ProgramCatalogView />} />
+
+          {/* Dedicated Staff Authentication Routes */}
+          <Route path="/login" element={<AuthView initialMode="login" />} />
+          <Route path="/register" element={<AuthView initialMode="register" />} />
+
+          {/* Sensitive Protected Staff Routes */}
+          <Route
+            path="/caseworker"
+            element={
+              <ProtectedRoute
+                allowedRoles={["Caseworker", "Admin"]}
+                viewName="Caseworker Desk"
+              >
+                <CaseworkerView />
+              </ProtectedRoute>
+            }
           />
-        )}
 
-        {currentView === "programs" && (
-          <ProgramCatalogView initialProgramId={selectedProgramId} />
-        )}
+          <Route
+            path="/analyst"
+            element={
+              <ProtectedRoute
+                allowedRoles={["Analyst", "Admin"]}
+                viewName="Policy Analyst Fairness Hub"
+              >
+                <AnalystView />
+              </ProtectedRoute>
+            }
+          />
 
-        {currentView === "navigator" && <NavigatorView />}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute
+                allowedRoles={["Admin"]}
+                viewName="System Admin Operations Center"
+              >
+                <AdminView />
+              </ProtectedRoute>
+            }
+          />
 
-        {currentView === "caseworker" && (
-          <div className="flex-1 max-w-7xl w-full mx-auto px-4 py-16 text-center text-slate-400">
-            <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 max-w-md mx-auto">
-              <div className="text-blue-400 font-bold mb-2">Step 4 View Coming Up</div>
-              <h3 className="text-lg font-bold text-white mb-2">Caseworker Management Portal</h3>
-              <p className="text-xs text-slate-400">
-                Org-scoped dossier table, new client intake with live Presidio redaction, and audited PII reveal.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {currentView === "analyst" && (
-          <div className="flex-1 max-w-7xl w-full mx-auto px-4 py-16 text-center text-slate-400">
-            <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 max-w-md mx-auto">
-              <div className="text-purple-400 font-bold mb-2">Step 5 View Coming Up</div>
-              <h3 className="text-lg font-bold text-white mb-2">Policy Analyst Fairness Dashboard</h3>
-              <p className="text-xs text-slate-400">
-                Disparate Impact Ratio (DIR) gauges, language parity charts, and zero-PII synthetic audit reports.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {currentView === "admin" && (
-          <div className="flex-1 max-w-7xl w-full mx-auto px-4 py-16 text-center text-slate-400">
-            <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 max-w-md mx-auto">
-              <div className="text-amber-400 font-bold mb-2">Step 5 View Coming Up</div>
-              <h3 className="text-lg font-bold text-white mb-2">System Admin Operations Center</h3>
-              <p className="text-xs text-slate-400">
-                Cluster health probes, on-demand synthetic bias audit runner, and vector index re-seeding.
-              </p>
-            </div>
-          </div>
-        )}
+          {/* Catch-all redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
 
       {/* Footer */}
@@ -103,10 +121,12 @@ const MainContent: React.FC = () => {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <MainContent />
-      </AuthProvider>
-    </LanguageProvider>
+    <BrowserRouter>
+      <LanguageProvider>
+        <AuthProvider>
+          <MainLayout />
+        </AuthProvider>
+      </LanguageProvider>
+    </BrowserRouter>
   );
 }

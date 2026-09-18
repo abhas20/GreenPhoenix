@@ -1,7 +1,7 @@
 import type { MatchingResult, ApplicationDraft } from "./program";
 
 export interface ApplicantProfile {
-  preferred_language: string;
+  preferred_language?: string;
   borough?: string | null;
   household_size?: number | null;
   annual_income?: number | null;
@@ -12,7 +12,7 @@ export interface ApplicantProfile {
   has_children_under_5?: boolean | null;
   is_homeowner?: boolean | null;
   primary_needs: string[];
-  missing_critical_fields: string[];
+  missing_critical_fields?: string[];
   clarification_question?: string | null;
   summary: string;
 }

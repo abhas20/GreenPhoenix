@@ -1,29 +1,26 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { HeroSection } from "../components/landing/HeroSection";
 import { BentoFeatures } from "../components/landing/BentoFeatures";
 import { ProgramTicker } from "../components/landing/ProgramTicker";
 import { RoleGateways } from "../components/landing/RoleGateways";
 
-interface HomeViewProps {
-  onNavigate: (view: string) => void;
-  onSelectProgram?: (programId: string) => void;
-}
+export const HomeView: React.FC = () => {
+  const navigate = useNavigate();
 
-export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onSelectProgram }) => {
   return (
     <div className="flex-1 flex flex-col">
       <HeroSection
-        onStartCrisisFlow={() => onNavigate("navigator")}
-        onExplorePrograms={() => onNavigate("programs")}
+        onStartCrisisFlow={() => navigate("/crisis")}
+        onExplorePrograms={() => navigate("/programs")}
       />
       <ProgramTicker
         onSelectProgram={(programId) => {
-          if (onSelectProgram) onSelectProgram(programId);
-          onNavigate("programs");
+          navigate(`/programs?id=${encodeURIComponent(programId)}`);
         }}
       />
-      <BentoFeatures onExplore={() => onNavigate("programs")} />
-      <RoleGateways onNavigate={onNavigate} />
+      <BentoFeatures onExplore={() => navigate("/programs")} />
+      <RoleGateways />
     </div>
   );
 };
