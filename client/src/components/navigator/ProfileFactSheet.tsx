@@ -16,7 +16,7 @@ export const ProfileFactSheet: React.FC<{ profile: ApplicantProfile }> = ({ prof
           </div>
           <p className="text-xs text-slate-300">
             {profile.clarification_question ||
-              `Please tell the navigator your ${profile.missing_critical_fields.join(" and ")} so we can verify exact eligibility limits.`}
+              `Please tell the navigator your ${(profile.missing_critical_fields || []).join(" and ")} so we can verify exact eligibility limits.`}
           </p>
         </div>
       )}

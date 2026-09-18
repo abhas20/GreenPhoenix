@@ -1,20 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Sparkles, Users, BarChart3, Settings, ArrowRight } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 
-interface RoleGatewaysProps {
-  onNavigate: (view: string) => void;
-}
-
-export const RoleGateways: React.FC<RoleGatewaysProps> = ({ onNavigate }) => {
-  const { switchPersona } = useAuth();
-
-  const handleGateway = async (view: string, personaKey?: string) => {
-    if (personaKey) {
-      await switchPersona(personaKey);
-    }
-    onNavigate(view);
-  };
+export const RoleGateways: React.FC = () => {
+  const navigate = useNavigate();
 
   const gateways = [
     {
@@ -23,8 +12,7 @@ export const RoleGateways: React.FC<RoleGatewaysProps> = ({ onNavigate }) => {
       description: "Chat with the confidential AI agent. Explain your situation in your own words, find matching programs, and build your document packet.",
       icon: Sparkles,
       actionText: "Start Crisis Intake",
-      view: "navigator",
-      personaKey: "applicant",
+      route: "/crisis",
       accent: "from-emerald-500/20 via-teal-500/10 to-transparent border-emerald-500/30 text-emerald-400 hover:border-emerald-500/60",
     },
     {
@@ -33,8 +21,7 @@ export const RoleGateways: React.FC<RoleGatewaysProps> = ({ onNavigate }) => {
       description: "Review client dossiers, manage organization-scoped records, perform audited PII rehydration, and export agency submission packets.",
       icon: Users,
       actionText: "Open Caseworker Desk",
-      view: "caseworker",
-      personaKey: "cw_hra",
+      route: "/caseworker",
       accent: "from-blue-500/20 via-indigo-500/10 to-transparent border-blue-500/30 text-blue-400 hover:border-blue-500/60",
     },
     {
@@ -43,8 +30,7 @@ export const RoleGateways: React.FC<RoleGatewaysProps> = ({ onNavigate }) => {
       description: "Track Disparate Impact Ratios (DIR) against the legal 0.80 four-fifths rule across multilingual and demographic synthetic cohorts. Zero PII.",
       icon: BarChart3,
       actionText: "View Fairness Analytics",
-      view: "analyst",
-      personaKey: "analyst",
+      route: "/analyst",
       accent: "from-purple-500/20 via-pink-500/10 to-transparent border-purple-500/30 text-purple-400 hover:border-purple-500/60",
     },
     {
@@ -53,8 +39,7 @@ export const RoleGateways: React.FC<RoleGatewaysProps> = ({ onNavigate }) => {
       description: "Inspect OpenSearch, Redis, and LLM cluster status, trigger manual synthetic bias replays, and re-seed vector embeddings from CSV.",
       icon: Settings,
       actionText: "Launch Admin Center",
-      view: "admin",
-      personaKey: "admin",
+      route: "/admin",
       accent: "from-amber-500/20 via-orange-500/10 to-transparent border-amber-500/30 text-amber-400 hover:border-amber-500/60",
     },
   ];
@@ -69,8 +54,8 @@ export const RoleGateways: React.FC<RoleGatewaysProps> = ({ onNavigate }) => {
           Tailored Workspaces for Every Stakeholder
         </h3>
         <p className="mt-3 text-sm text-slate-400">
-          Switch roles seamlessly to explore how AWS Cedar authorization governs access
-          between public applicants, agency workers, equity researchers, and administrators.
+          Public citizen applicants navigate with zero PII retention, while agency caseworkers,
+          equity analysts, and administrators require verified role credentials governed by AWS Cedar.
         </p>
       </div>
 
@@ -95,7 +80,7 @@ export const RoleGateways: React.FC<RoleGatewaysProps> = ({ onNavigate }) => {
 
               <button
                 type="button"
-                onClick={() => handleGateway(gw.view, gw.personaKey)}
+                onClick={() => navigate(gw.route)}
                 className="mt-6 w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-900/90 text-white border border-slate-700 hover:bg-slate-800 hover:border-slate-600 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>{gw.actionText}</span>
