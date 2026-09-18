@@ -71,8 +71,11 @@ async def process_chat_turn(
     dependencies=[Depends(require_cedar("readOwnSession", "Session"))],
     summary="Retrieve current session profile, matches, and application draft"
 )
-async def get_current_session(principal: Principal = Depends(get_current_principal)):
-    return orchestrator.store.get(principal.id)
+def get_current_session(principal: Principal = Depends(get_current_principal)):
+    session = orchestrator.store.get(principal.id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
+    return session
 
 
 @router.get(
@@ -81,17 +84,19 @@ async def get_current_session(principal: Principal = Depends(get_current_princip
     dependencies=[Depends(require_cedar("readOwnSession", "Session"))],
     summary="Retrieve specific session by ID (strictly isolated to owner)"
 )
-async def get_session_by_id(
+def get_session_by_id(
     session_id: str,
     principal: Principal = Depends(get_current_principal)
 ):
-    # Defense-in-depth: Verify session ownership at the route boundary
     if principal.role == "PublicApplicant" and session_id != principal.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: Cannot access another applicant's session."
         )
-    return orchestrator.store.get(session_id)
+    session = orchestrator.store.get(session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
+    return session
 
 
 @router.delete(

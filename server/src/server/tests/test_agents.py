@@ -10,12 +10,23 @@ def test_agentic_orchestration():
     print("\n========================================================")
     print("🤖 TESTING STRANDS AGENTIC ORCHESTRATION LAYER 🤖")
     print("========================================================")
+    orchestrator.store.reset("test_session_001")
+    # Define test user principal for Cedar authorization
+    test_principal = {
+        "principal_id": "test_user_001",
+        "principal_role": "PublicApplicant",
+        "org_id": None
+    }
 
     # 1. Test Intake Clarification Loop (Turn 1: Missing borough and income)
     partial_prompt = "Hello, I am in crisis and facing eviction. What emergency rent help can I get?"
 
     print("\n[Turn 1] Testing Intake Clarification Loop...")
-    turn1_resp = orchestrator.process_user_turn(partial_prompt, session_id="test_session_001")
+    turn1_resp = orchestrator.process_user_turn(
+        partial_prompt, 
+        session_id="test_session_001",
+        **test_principal
+    )
     print(f"💬 Turn 1 Agent Reply: {turn1_resp.reply_message}")
     print(f"   Clarification Needed: {turn1_resp.clarification_needed}")
     print(f"   Missing Fields: {turn1_resp.applicant_profile.missing_critical_fields}")
@@ -29,7 +40,11 @@ def test_agentic_orchestration():
     )
 
     print("\n[Turn 2] Running Full Matching & Document Generation...")
-    turn2_resp = orchestrator.process_user_turn(complete_prompt, session_id="test_session_001")
+    turn2_resp = orchestrator.process_user_turn(
+        complete_prompt, 
+        session_id="test_session_001",
+        **test_principal
+    )
 
     print(f"\n💬 Turn 2 Agent Reply:")
     print(f"   {turn2_resp.reply_message}")
@@ -62,7 +77,11 @@ def test_agentic_orchestration():
     # 3. Test Interactive Follow-Up / Eligibility Detail QA (Turn 3)
     follow_up_prompt = "Can you explain why I did not qualify for SCRIE, and what makes DRIE a better fit for me?"
     print("\n[Turn 3] Testing Interactive User Follow-up Question on Eligibility...")
-    turn3_resp = orchestrator.process_user_turn(follow_up_prompt, session_id="test_session_001")
+    turn3_resp = orchestrator.process_user_turn(
+        follow_up_prompt, 
+        session_id="test_session_001",
+        **test_principal
+    )
     print(f"\n💬 Turn 3 Agent Reply:")
     print(f"   {turn3_resp.reply_message}")
 
@@ -72,7 +91,7 @@ def test_agentic_orchestration():
 
     # 4. Test Out-of-band Bias-Audit Agent
     print("\n[Step 4] Testing Bias-Audit Agent (Synthetic Multilingual Replays)...")
-    audit_report = run_bias_audit(batch_size=4) # use mode="agentic" for full agentic orchestration audit
+    audit_report = run_bias_audit(batch_size=4)
     print(f"   Audit Run ID: {audit_report.run_id}")
     print(f"   Status: {audit_report.fairness_status}")
     print(f"   Disparate Impact Ratio (DIR): {audit_report.disparate_impact_ratio:.2f}")

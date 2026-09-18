@@ -43,6 +43,22 @@ def _strip_pii_from_report_details(details: Dict[str, Any]) -> Dict[str, Any]:
         }
         for c in raw_cases
     ]
+    safe = dict(details)
+    raw_cases = safe.get("detailed_cases", [])
+    safe["detailed_cases"] = [
+        {
+            "scenario_id": c.get("scenario_id") or c.get("test_id"),
+            "test_id": c.get("test_id") or c.get("scenario_id"),
+            "scenario_name": c.get("scenario_name"),
+            "language": c.get("language"),
+            "variation_type": c.get("variation_type"),
+            "matched_program_ids": c.get("matched_program_ids", []),
+            "match_count": c.get("match_count"),
+            "execution_mode": c.get("execution_mode"),
+            "error": c.get("error"),
+        }
+        for c in raw_cases
+    ]
     return safe
 
 
@@ -52,7 +68,7 @@ def _strip_pii_from_report_details(details: Dict[str, Any]) -> Dict[str, Any]:
     dependencies=[Depends(require_cedar("readAuditMetrics", {"type": "AuditLog", "containsPII": False}))],
     summary="Get aggregated fairness and disparate impact metrics",
 )
-async def get_audit_metrics():
+def get_audit_metrics():
     """
     Returns high-level algorithmic fairness telemetry.
     Filters exclusively for actual audit run reports and forwards aggregate fields.
@@ -60,7 +76,7 @@ async def get_audit_metrics():
     client = _get_opensearch_client()
     try:
         res = client.search(
-            index=settings.OPENSEARCH_INDEX_AUDIT,
+            index="bias-fairness-reports",
             body={
                 "query": {
                     "bool": {
@@ -106,7 +122,7 @@ async def get_audit_metrics():
     dependencies=[Depends(require_cedar("runAuditManually", {"type": "MatchingService"}))],
     summary="Trigger on-demand bias audit (Admin-only)",
 )
-async def trigger_manual_audit(
+def trigger_manual_audit(
     req: TriggerAuditRequest,
     principal: Principal = Depends(get_current_principal),
 ):
@@ -133,7 +149,7 @@ async def trigger_manual_audit(
     dependencies=[Depends(require_cedar("readAuditMetrics", {"type": "AuditLog", "containsPII": False}))],
     summary="Get specific historical audit run details (PII-stripped)",
 )
-async def get_audit_report(run_id: str):
+def get_audit_report(run_id: str):
     """
     Returns detailed results of a specific audit run, with all applicant profiles
     and narratives stripped to maintain zero-PII compliance for Analyst callers.
@@ -141,7 +157,7 @@ async def get_audit_report(run_id: str):
     client = _get_opensearch_client()
     try:
         res = client.search(
-            index=settings.OPENSEARCH_INDEX_AUDIT,
+            index="bias-fairness-reports",
             body={
                 "query": {
                     "bool": {

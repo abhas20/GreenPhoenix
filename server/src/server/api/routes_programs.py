@@ -7,7 +7,7 @@ from server.config import settings
 from server.core.auth import Principal, require_cedar, get_current_principal
 from server.tools.search_tools import hybrid_search_programs, _get_opensearch_client
 from server.tools.eligibility_tools import check_program_eligibility
-from server.tools.document_tools import get_program_requirements
+from server.tools.document_tools import get_programs_requirements
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class EligibilityCheckRequest(BaseModel):
     dependencies=[Depends(require_cedar("searchPrograms", "AidPrograms"))],
     summary="Search aid programs via OpenSearch hybrid vector + BM25"
 )
-async def search_aid_programs(
+def search_aid_programs(
     query: str = Query(..., min_length=2, description="Search terms, location, or crisis description"),
     limit: int = Query(6, ge=1, le=20),
     include_closed: bool = Query(False),
@@ -54,7 +54,7 @@ async def search_aid_programs(
     dependencies=[Depends(require_cedar("getProgramRequirements", "AidPrograms"))],
     summary="Get detailed program metadata and rules"
 )
-async def get_program_details(program_id: str):
+def get_program_details(program_id: str):
     client = _get_opensearch_client()
     try:
         doc = client.get(index=settings.OPENSEARCH_INDEX_PROGRAMS, id=program_id)
@@ -69,7 +69,7 @@ async def get_program_details(program_id: str):
     dependencies=[Depends(require_cedar("checkEligibility", "AidPrograms"))],
     summary="Deterministic eligibility qualification check"
 )
-async def evaluate_eligibility(
+def evaluate_eligibility(
     program_id: str,
     req: EligibilityCheckRequest,
     principal: Principal = Depends(get_current_principal)
@@ -97,5 +97,5 @@ async def evaluate_eligibility(
     dependencies=[Depends(require_cedar("getProgramRequirements", "AidPrograms"))],
     summary="Get required documents and application checklist"
 )
-async def get_requirements(program_id: str):
-    return get_program_requirements(program_id=program_id)
+def get_requirements(program_id: str):
+    return get_programs_requirements(program_ids=[program_id])

@@ -26,6 +26,7 @@ def get_opensearch_client() -> OpenSearch:
 def setup_indices(client: OpenSearch, recreate: bool = True):
     programs_index = settings.OPENSEARCH_INDEX_PROGRAMS
     audit_index = settings.OPENSEARCH_INDEX_AUDIT
+    bias_index = "bias-fairness-reports"
 
     # 1. Aid Programs Index with k-NN Vector Mapping
     programs_mapping = {
@@ -113,7 +114,26 @@ def setup_indices(client: OpenSearch, recreate: bool = True):
                     }
                 },
                 "decision": {"type": "keyword"},
-                "details": {"type": "object", "dynamic": True}
+                "details": {"type": "object", "enabled": False} 
+            }
+        }
+    }
+
+    bias_mapping = {
+        "settings": {
+            "index": {
+                "number_of_shards": 1,
+                "number_of_replicas": 0
+            }
+        },
+        "mappings": {
+            "properties": {
+                "timestamp": {"type": "date"},
+                "principal": {"type": "object", "dynamic": True},
+                "action": {"type": "keyword"},
+                "decision": {"type": "keyword"},
+                # This explicitly tells OpenSearch to allow ANY fields inside 'details'
+                "details": {"type": "object", "dynamic": True} 
             }
         }
     }
@@ -125,6 +145,9 @@ def setup_indices(client: OpenSearch, recreate: bool = True):
         if client.indices.exists(index=audit_index):
             client.indices.delete(index=audit_index)
             print(f"Deleted existing index: {audit_index}")
+        if client.indices.exists(index=bias_index):
+            client.indices.delete(index=bias_index)
+            print(f"Deleted existing index: {bias_index}")
 
     if not client.indices.exists(index=programs_index):
         client.indices.create(index=programs_index, body=programs_mapping)
@@ -133,6 +156,10 @@ def setup_indices(client: OpenSearch, recreate: bool = True):
     if not client.indices.exists(index=audit_index):
         client.indices.create(index=audit_index, body=audit_mapping)
         print(f"Created index: {audit_index}")
+
+    if not client.indices.exists(index=bias_index):
+        client.indices.create(index=bias_index, body=bias_mapping)
+        print(f"Created index: {bias_index} for bias/fairness audit reports")
 
 
 def find_csv_path() -> Path:
@@ -257,7 +284,8 @@ def setup_dashboards_index_patterns():
 
     patterns = [
         {"id": "aid-programs", "title": "aid-programs*", "time_field": None},
-        {"id": "audit-log", "title": "audit-log*", "time_field": "timestamp"}
+        {"id": "audit-log", "title": "audit-log*", "time_field": "timestamp"},
+        {"id": "bias-fairness-reports", "title": "bias-fairness-reports*", "time_field": "timestamp"} 
     ]
 
     for p in patterns:

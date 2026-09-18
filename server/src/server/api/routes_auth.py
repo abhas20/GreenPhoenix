@@ -45,7 +45,7 @@ class LoginResponse(BaseModel):
     status_code=status.HTTP_201_CREATED,
     summary="Register a new sensitive identity (Caseworker, Analyst, Admin)"
 )
-async def register_user(req: RegisterRequest):
+def register_user(req: RegisterRequest):
     """
     Open self-registration for sensitive role personas:
     - Validates role membership against Cedar policy vocabulary.
@@ -100,7 +100,7 @@ async def register_user(req: RegisterRequest):
     response_model=LoginResponse,
     summary="Authenticate with email & password to obtain Bearer JWT token"
 )
-async def login_user(req: LoginRequest):
+def login_user(req: LoginRequest):
     """
     Authenticates sensitive role users:
     - Validates credentials against DynamoDB bcrypt hash.
@@ -149,7 +149,7 @@ async def login_user(req: LoginRequest):
     response_model=Dict[str, Any],
     summary="Retrieve profile of currently authenticated sensitive user"
 )
-async def get_current_user_profile(principal: Principal = Depends(get_current_principal)):
+def get_current_user_profile(principal: Principal = Depends(get_current_principal)):
     """Returns profile for current Bearer token holder."""
     if not principal.is_authenticated:
         raise HTTPException(

@@ -109,7 +109,7 @@ class RevealPiiResponse(BaseModel):
     dependencies=[Depends(require_cedar("readApplicantRecord", resolve_caseworker_org_resource))],
     summary="List active cases within caseworker organization (PII-redacted)",
 )
-async def list_cases(principal: Principal = Depends(get_current_principal)):
+def list_cases(principal: Principal = Depends(get_current_principal)):
     client = _get_redis_client()
     cases = []
     if client:
@@ -137,7 +137,7 @@ async def list_cases(principal: Principal = Depends(get_current_principal)):
     dependencies=[Depends(require_cedar("draftApplication", resolve_caseworker_org_resource))],
     summary="Create a new client case under caseworker organization (PII-redacted response)",
 )
-async def create_case(
+def create_case(
     req: CreateCaseRequest,
     principal: Principal = Depends(get_current_principal),
 ):
@@ -183,7 +183,7 @@ async def create_case(
     dependencies=[Depends(require_cedar("readApplicantRecord", resolve_case_resource))],
     summary="Get case details, PII-redacted (scoped to caseworker organization)",
 )
-async def get_case_details(case_id: str):
+def get_case_details(case_id: str):
     case = _get_case(case_id)
     if not case:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Case '{case_id}' not found")
@@ -196,7 +196,7 @@ async def get_case_details(case_id: str):
     dependencies=[Depends(require_cedar("readPiiVault", resolve_case_resource))],
     summary="Explicit on-demand PII unmasking for portal submission",
 )
-async def reveal_case_pii(
+def reveal_case_pii(
     case_id: str,
     principal: Principal = Depends(get_current_principal),
 ):
@@ -237,7 +237,7 @@ async def reveal_case_pii(
     ],
     summary="Export consolidated case packet (includes unmasked PII for agency submission)",
 )
-async def export_case(
+def export_case(
     case_id: str,
     principal: Principal = Depends(get_current_principal),
 ):

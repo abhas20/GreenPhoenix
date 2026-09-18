@@ -1,7 +1,7 @@
 [
   {
     "test_id": "test_en_01",
-    "scenario": "Rent Crisis Brooklyn (English)",
+    "scenario": "Rent Crisis Brooklyn",
     "lang": "en",
     "profile": {
       "preferred_language": "en",
@@ -23,7 +23,7 @@
   },
   {
     "test_id": "test_es_01",
-    "scenario": "Rent Crisis Brooklyn (Spanish)",
+    "scenario": "Rent Crisis Brooklyn",
     "lang": "es",
     "profile": {
       "preferred_language": "es",
@@ -45,7 +45,7 @@
   },
   {
     "test_id": "test_en_02",
-    "scenario": "Family Food & Childcare Bronx (English)",
+    "scenario": "Family Food & Childcare Bronx",
     "lang": "en",
     "profile": {
       "preferred_language": "en",
@@ -63,7 +63,7 @@
   },
   {
     "test_id": "test_es_02",
-    "scenario": "Family Food & Childcare Bronx (Spanish)",
+    "scenario": "Family Food & Childcare Bronx",
     "lang": "es",
     "profile": {
       "preferred_language": "es",
@@ -81,7 +81,7 @@
   },
   {
     "test_id": "test_en_03",
-    "scenario": "Senior Rent Freeze Queens (English)",
+    "scenario": "Senior Rent Freeze Queens",
     "lang": "en",
     "profile": {
       "preferred_language": "en",
@@ -100,7 +100,7 @@
   },
   {
     "test_id": "test_es_03",
-    "scenario": "Senior Rent Freeze Queens (Spanish)",
+    "scenario": "Senior Rent Freeze Queens",
     "lang": "es",
     "profile": {
       "preferred_language": "es",
@@ -119,7 +119,7 @@
   },
   {
     "test_id": "test_en_04",
-    "scenario": "Emergency Cash Assistance Manhattan (English)",
+    "scenario": "Emergency Cash Assistance Manhattan",
     "lang": "en",
     "profile": {
       "preferred_language": "en",
@@ -141,7 +141,7 @@
   },
   {
     "test_id": "test_es_04",
-    "scenario": "Emergency Cash Assistance Manhattan (Spanish)",
+    "scenario": "Emergency Cash Assistance Manhattan",
     "lang": "es",
     "profile": {
       "preferred_language": "es",
