@@ -1,10 +1,11 @@
 import logging
 from typing import Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from pydantic import BaseModel, EmailStr, Field
 
 from server.core.auth import Principal, create_access_token, get_current_principal
 from server.core.user_store import user_store, verify_password
+from server.config import settings
 
 log = logging.getLogger(__name__)
 
@@ -164,4 +165,28 @@ def get_current_user_profile(principal: Principal = Depends(get_current_principa
         "org_id": principal.org_id,
         "name": principal.name,
         "is_authenticated": True
+    }
+
+
+@router.post(
+    "/logout",
+    summary="Logout user and clear session cookies"
+)
+def logout_user(response: Response):
+    """
+    Unified logout endpoint. 
+    Clears the HttpOnly session cookie if present.
+    Note: For JWT authenticated users, the frontend MUST also discard the Bearer token.
+    """
+    # Delete the cookie by setting its expiration to the past
+    response.delete_cookie(
+        key=settings.SESSION_COOKIE_NAME,
+        path="/",
+        samesite="lax",
+        secure=settings.COOKIE_SECURE
+    )
+    
+    return {
+        "status": "success", 
+        "message": "Logged out successfully. Client must discard Bearer token."
     }

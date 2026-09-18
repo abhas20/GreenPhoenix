@@ -116,6 +116,15 @@ permit (
   resource
 );
 
+permit (
+  principal in Role::"Analyst",
+  action == Action::"readAuditMetrics",
+  resource
+) unless {
+  resource.containsPII == true
+};
+
+
 // ----------------------------------------------------------------------------
 // 7. Human Review Gate: Overrides self-service drafting on high-stakes aid
 // ----------------------------------------------------------------------------

@@ -11,6 +11,7 @@ from server.core.auth import Principal, require_cedar, get_current_principal
 from server.core.presidio_sanitizer import sanitizer
 from server.agents.intake_agent import ApplicantProfile
 from server.agents.orchestrator import _get_redis_client
+from server.agents.audit_agent import _get_opensearch_client
 
 log = logging.getLogger(__name__)
 
@@ -213,11 +214,33 @@ def reveal_case_pii(
     unmasked = sanitizer.rehydrate(sanitized, vault)
 
     # Server-side structured compliance audit log
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
     log.info(
         f"[PII_REVEAL] case_id={case_id} principal={principal.id} "
         f"role={principal.role} org_id={principal.org_id} "
         f"timestamp={datetime.datetime.now(datetime.timezone.utc).isoformat()}"
     )
+
+    try:
+        os_client = _get_opensearch_client()
+        os_client.index(
+            index=settings.OPENSEARCH_INDEX_AUDIT,
+            body={
+                "timestamp": now_iso,
+                "session_id": principal.id,
+                "principal": principal.to_dict(),
+                "action": "readPiiVault",
+                "resource": {
+                    "type": "ApplicantRecord", 
+                    "id": case_id, 
+                    "orgId": principal.org_id
+                },
+                "decision": "ALLOW",
+                "details": {"event": "explicit_pii_unmasking"}
+            }
+        )
+    except Exception as e:
+        log.error(f"[Audit Fail] Could not write PII reveal to OpenSearch: {e}")
 
     return RevealPiiResponse(
         case_id=case_id,
@@ -245,11 +268,33 @@ def export_case(
     if not case:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Case '{case_id}' not found")
 
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
     log.info(
         f"[PII_REVEAL] via export case_id={case_id} principal={principal.id} "
         f"role={principal.role} org_id={principal.org_id} "
         f"timestamp={datetime.datetime.now(datetime.timezone.utc).isoformat()}"
     )
+
+    try:
+        os_client = _get_opensearch_client()
+        os_client.index(
+            index=settings.OPENSEARCH_INDEX_AUDIT,
+            body={
+                "timestamp": now_iso,
+                "session_id": principal.id,
+                "principal": principal.to_dict(),
+                "action": "exportApplication",
+                "resource": {
+                    "type": "ApplicantRecord", 
+                    "id": case_id, 
+                    "orgId": principal.org_id
+                },
+                "decision": "ALLOW",
+                "details": {"event": "full_case_export"}
+            }
+        )
+    except Exception as e:
+        log.error(f"[Audit Fail] Could not write Export to OpenSearch: {e}")
 
     return {
         "case_id": case_id,

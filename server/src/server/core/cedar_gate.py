@@ -157,6 +157,9 @@ class CedarGate:
             elif action == "readApplicantRecord":
                 decision = "ALLOW"
                 reason = "Matched Policy 6: Admin escalation read"
+            elif action == "readAuditMetrics":
+                decision = "ALLOW"
+                reason = "Matched Policy 6: Admin audit metrics read"
 
         # Append to OpenSearch audit log
         self._log_audit_decision(
