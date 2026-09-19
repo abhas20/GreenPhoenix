@@ -1,9 +1,18 @@
 import React from "react";
 import { Cpu, ShieldCheck, Lock, Scale, Globe, ArrowUpRight } from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
+import { useAuth } from "../../context/AuthContext";
 
 export const BentoFeatures: React.FC<{ onExplore: () => void }> = ({ onExplore }) => {
   const { t } = useLanguage();
+  const { role } = useAuth();
+
+  const exploreLabel =
+    role === "Analyst"
+      ? t("Open Fairness Hub")
+      : role === "Admin"
+      ? t("Open Admin Ops")
+      : t("Explore Aid Catalog");
 
   return (
     <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -120,7 +129,7 @@ export const BentoFeatures: React.FC<{ onExplore: () => void }> = ({ onExplore }
             onClick={onExplore}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
           >
-            <span>{t("Explore Aid Catalog", "Explore Aid Catalog")}</span>
+            <span>{exploreLabel}</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>

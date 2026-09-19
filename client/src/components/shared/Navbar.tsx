@@ -26,14 +26,20 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isStaff = user !== null && role !== "PublicApplicant";
+  // Under Cedar Policies #1 and #2, only PublicApplicant and Caseworker can search programs.
+  const canSearchPrograms = role === "PublicApplicant" || role === "Caseworker";
+  // Under Cedar Policy #1, only PublicApplicant has `deleteOwnSession` permission.
+  const canDeleteSession = role === "PublicApplicant";
 
-  // Base links: Only Public Applicant sees "Crisis Intake"
+  // Base links: strictly governed by Cedar permissions
   const baseLinks = [
     { to: "/", label: t("Overview"), icon: Compass },
-    ...(!isStaff
+    ...(role === "PublicApplicant"
       ? [{ to: "/crisis", label: t("Crisis Intake"), icon: Sparkles, highlight: true }]
       : []),
-    { to: "/programs", label: t("Aid Directory"), icon: BookOpen },
+    ...(canSearchPrograms
+      ? [{ to: "/programs", label: t("Aid Directory"), icon: BookOpen }]
+      : []),
   ];
 
   // Sensitive staff links displayed strictly if the current role is authorized
@@ -140,8 +146,8 @@ export const Navbar: React.FC = () => {
 
           {/* 3. Right: Clean Actions (Profile Dropdown or Staff Sign In) */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Quick Exit (Safety button, visible on all screens) */}
-            <QuickExitButton />
+            {/* Quick Exit (Safety button, strictly restricted to Public Applicant per Cedar Policy 1) */}
+            {canDeleteSession && <QuickExitButton />}
 
             {/* Authenticated Staff: Compact Profile Avatar Dropdown */}
             {isStaff ? (

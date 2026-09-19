@@ -27,6 +27,20 @@ const CrisisRoute: React.FC = () => {
   return <NavigatorView />;
 };
 
+/**
+ * Route guard that restricts Aid Program search to roles authorized with
+ * `searchPrograms` under Cedar policies (PublicApplicant and Caseworker).
+ * Analysts and Admins are redirected to their authorized operational portals.
+ */
+const ProgramCatalogRoute: React.FC = () => {
+  const { user, role } = useAuth();
+  if (user && role !== "PublicApplicant" && role !== "Caseworker") {
+    if (role === "Analyst") return <Navigate to="/analyst" replace />;
+    if (role === "Admin") return <Navigate to="/admin" replace />;
+  }
+  return <ProgramCatalogView />;
+};
+
 const MainLayout: React.FC = () => {
   const { currentLanguage, isTranslationActive } = useLanguage();
 
@@ -56,7 +70,7 @@ const MainLayout: React.FC = () => {
           {/* Public Citizen Routes */}
           <Route path="/" element={<HomeView />} />
           <Route path="/crisis" element={<CrisisRoute />} />
-          <Route path="/programs" element={<ProgramCatalogView />} />
+          <Route path="/programs" element={<ProgramCatalogRoute />} />
 
           {/* Dedicated Staff Authentication Routes */}
           <Route path="/login" element={<AuthView initialMode="login" />} />

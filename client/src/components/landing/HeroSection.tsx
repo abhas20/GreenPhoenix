@@ -1,6 +1,17 @@
 import React from "react";
-import { Sparkles, ArrowRight, ShieldCheck, Lock, HeartHandshake, FileText } from "lucide-react";
+import {
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  Lock,
+  HeartHandshake,
+  FileText,
+  Users,
+  BarChart3,
+  Settings,
+} from "lucide-react";
 import { useLanguage } from "../../context/LanguageContext";
+import { useAuth } from "../../context/AuthContext";
 
 interface HeroSectionProps {
   onStartCrisisFlow: () => void;
@@ -12,6 +23,38 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onExplorePrograms,
 }) => {
   const { currentLanguage, isTranslationActive, t } = useLanguage();
+  const { role } = useAuth();
+
+  // Under Cedar Policies #1 and #2, only PublicApplicant and Caseworker can search programs.
+  const canSearchPrograms = role === "PublicApplicant" || role === "Caseworker";
+
+  const getPrimaryCta = () => {
+    if (role === "Caseworker") {
+      return {
+        label: t("Open Caseworker Desk"),
+        Icon: Users,
+      };
+    }
+    if (role === "Analyst") {
+      return {
+        label: t("View Fairness Analytics"),
+        Icon: BarChart3,
+      };
+    }
+    if (role === "Admin") {
+      return {
+        label: t("Launch Admin Center"),
+        Icon: Settings,
+      };
+    }
+    return {
+      label: t("Speak to Aid Navigator — Get Help Now"),
+      Icon: Sparkles,
+    };
+  };
+
+  const primaryCta = getPrimaryCta();
+  const PrimaryIcon = primaryCta.Icon;
 
   return (
     <div className="relative overflow-hidden pt-12 pb-20 md:pt-16 md:pb-28">
@@ -54,7 +97,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
         )}
 
-        {/* Highlighted Crisis CTA Button (Pulsing, high-contrast) */}
+        {/* Highlighted CTA Button (Pulsing, high-contrast) */}
         <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             type="button"
@@ -62,21 +105,23 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             className="group relative w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-base bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 text-slate-950 shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-3 overflow-hidden"
           >
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-            <Sparkles className="w-5 h-5 text-slate-950 animate-bounce" />
+            <PrimaryIcon className="w-5 h-5 text-slate-950 animate-bounce" />
             <span className="relative z-10 tracking-wide font-extrabold">
-              {t("Speak to Aid Navigator — Get Help Now")}
+              {primaryCta.label}
             </span>
             <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform relative z-10" />
           </button>
 
-          <button
-            type="button"
-            onClick={onExplorePrograms}
-            className="w-full sm:w-auto px-6 py-4 rounded-2xl font-semibold text-sm bg-slate-900/90 text-slate-200 border border-slate-700 hover:border-slate-500 hover:bg-slate-850 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
-          >
-            <FileText className="w-4 h-4 text-slate-400" />
-            <span>{t("Browse 50+ Aid Programs")}</span>
-          </button>
+          {canSearchPrograms && (
+            <button
+              type="button"
+              onClick={onExplorePrograms}
+              className="w-full sm:w-auto px-6 py-4 rounded-2xl font-semibold text-sm bg-slate-900/90 text-slate-200 border border-slate-700 hover:border-slate-500 hover:bg-slate-850 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+            >
+              <FileText className="w-4 h-4 text-slate-400" />
+              <span>{t("Browse 50+ Aid Programs")}</span>
+            </button>
+          )}
         </div>
 
         {/* Trust Badges */}
