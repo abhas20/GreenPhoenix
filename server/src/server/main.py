@@ -39,8 +39,17 @@ async def lifespan(app: FastAPI):
         health = os_client.cluster.health()
         log.info(f"OpenSearch connected (cluster status: {health.get('status')})")
         ensure_hybrid_search_pipeline(os_client)
+
+        # Auto-seed OpenSearch if the aid-programs index does not exist 
+        if not os_client.indices.exists(index=settings.OPENSEARCH_INDEX_PROGRAMS):
+            log.info(f"[OpenSearch] Index '{settings.OPENSEARCH_INDEX_PROGRAMS}' not found. Auto-seeding from CSV dataset...")
+            from server.data.seed import main as seed_main
+            seed_main()
+            log.info("[OpenSearch] Initial dataset seeding completed successfully.")
+        else:
+            log.info(f"[OpenSearch] Index '{settings.OPENSEARCH_INDEX_PROGRAMS}' is ready.")
     except Exception as e:
-        log.error(f"Failed to connect to OpenSearch at {settings.OPENSEARCH_HOST}: {e}")
+        log.error(f"OpenSearch initialization/seeding encountered error: {e}")
 
     # 2. Redis Check
     try:

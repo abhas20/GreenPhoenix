@@ -1,0 +1,97 @@
+name: CI/CD Pipeline - GreenPhoenix
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # 1. Continuous Integration: Basic Verification Checks
+  # ============================================================================
+  ci:
+    name: Code & Build Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          docker compose -f docker-compose.prod.yml config
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Frontend Dependencies
+        working-directory: ./client
+        run: |
+          bun install --frozen-lockfile
+
+      - name: Verify Frontend TypeScript & Production Build
+        working-directory: ./client
+        run: |
+          bun run build
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify Backend Python Syntax & Compilation
+        run: |
+          python -m compileall server/src/server
+
+  # ============================================================================
+  # 2. Continuous Deployment: Auto-Deploy to EC2 on Push to Main
+  # ============================================================================
+  deploy:
+    name: Deploy to EC2
+    needs: ci
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || 22 }}
+          script_stop: true
+          script: |
+            echo "🚀 Starting automated deployment on EC2..."
+            
+            # Navigate to project directory
+            cd ${{ secrets.EC2_PROJECT_PATH }}
+
+            # Pull latest changes from git
+            echo "📥 Pulling latest code from GitHub..."
+            git pull origin ${{ github.ref_name }}
+
+            # Build and deploy containers using production compose
+            echo "🐳 Building and restarting containers..."
+            docker compose -f docker-compose.prod.yml up --build -d
+
+            # Clean up dangling images to save disk space on EC2
+            echo "🧹 Cleaning up unused Docker images..."
+            docker image prune -f
+
+            # Verify container status
+            echo "🩺 Container status:"
+            docker compose -f docker-compose.prod.yml ps
+
+            echo "✅ Deployment completed successfully!"
