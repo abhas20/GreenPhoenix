@@ -1,9 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, Users, BarChart3, Settings, ArrowRight } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export const RoleGateways: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const gateways = [
     {
@@ -48,14 +50,15 @@ export const RoleGateways: React.FC = () => {
     <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center max-w-2xl mx-auto mb-12">
         <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-2">
-          Role-Gated Portals
+          {t("Role-Gated Portals", "Role-Gated Portals")}
         </h2>
         <h3 className="text-3xl font-extrabold text-white tracking-tight">
-          Tailored Workspaces for Every Stakeholder
+          {t("Tailored Workspaces for Every Stakeholder", "Tailored Workspaces for Every Stakeholder")}
         </h3>
         <p className="mt-3 text-sm text-slate-400">
-          Public citizen applicants navigate with zero PII retention, while agency caseworkers,
-          equity analysts, and administrators require verified role credentials governed by AWS Cedar.
+          {t(
+            "Public citizen applicants navigate with zero PII retention, while agency caseworkers, equity analysts, and administrators require verified role credentials governed by AWS Cedar."
+          )}
         </p>
       </div>
 
@@ -72,10 +75,10 @@ export const RoleGateways: React.FC = () => {
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="text-[10px] font-mono uppercase font-bold tracking-wider opacity-75">
-                  {gw.role}
+                  {t(gw.role)}
                 </div>
-                <h4 className="text-lg font-bold text-white mt-1 mb-2">{gw.title}</h4>
-                <p className="text-xs text-slate-300 leading-relaxed">{gw.description}</p>
+                <h4 className="text-lg font-bold text-white mt-1 mb-2">{t(gw.title)}</h4>
+                <p className="text-xs text-slate-300 leading-relaxed">{t(gw.description)}</p>
               </div>
 
               <button
@@ -83,7 +86,7 @@ export const RoleGateways: React.FC = () => {
                 onClick={() => navigate(gw.route)}
                 className="mt-6 w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-900/90 text-white border border-slate-700 hover:bg-slate-800 hover:border-slate-600 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>{gw.actionText}</span>
+                <span>{t(gw.actionText)}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

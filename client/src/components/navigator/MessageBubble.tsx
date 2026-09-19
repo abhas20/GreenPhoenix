@@ -2,6 +2,12 @@ import React from "react";
 import { Bot, User, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import type { SessionHistoryItem } from "../../types/chat";
+import { useLanguage } from "../../context/LanguageContext";
+
+const WELCOME_PART_1 =
+  "Hello. I am your confidential Community Aid Navigator. I am here to help you find and apply for emergency housing, food, cash, and utility assistance in New York City.";
+const WELCOME_PART_2 =
+  "Please describe your situation in your own words—whether you are behind on rent, lost income, or need help paying for groceries. All personal identifiers (names, phone numbers, addresses) are automatically encrypted before processing.";
 
 interface MessageBubbleProps {
   message: SessionHistoryItem;
@@ -9,7 +15,14 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isStreaming }) => {
+  const { t } = useLanguage();
   const isAssistant = message.role === "assistant" || message.role === "system";
+
+  // Translate welcome message content dynamically when language changes
+  const contentToDisplay =
+    isAssistant && message.content.includes("confidential Community Aid Navigator")
+      ? `${t(WELCOME_PART_1)}\n\n${t(WELCOME_PART_2)}`
+      : message.content;
 
   return (
     <div
@@ -38,7 +51,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isStreami
               isAssistant ? "text-emerald-400" : "text-slate-950/80"
             }`}
           >
-            {isAssistant ? "GreenPhoenix Navigator" : "You"}
+            {isAssistant ? t("GreenPhoenix Navigator") : t("You")}
           </span>
           {message.timestamp && (
             <span
@@ -85,7 +98,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isStreami
                 ),
               }}
             >
-              {message.content}
+              {contentToDisplay}
             </ReactMarkdown>
           </div>
         ) : (
@@ -97,7 +110,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isStreami
         {isStreaming && (
           <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
             <Sparkles className="w-3.5 h-3.5 animate-spin shrink-0" />
-            <span>Formulating compassionate response & checking statutory rules...</span>
+            <span>{t("Formulating compassionate response & checking statutory rules...")}</span>
           </div>
         )}
       </div>

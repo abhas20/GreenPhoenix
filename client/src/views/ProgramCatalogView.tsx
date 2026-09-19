@@ -5,6 +5,7 @@ import type { ProgramDocument } from "../types/program";
 import { programService } from "../services/programService";
 import { EligibilityTesterModal } from "../components/programs/EligibilityTesterModal";
 import { ProgramDetailModal } from "../components/programs/ProgramDetailModal";
+import { useLanguage } from "../context/LanguageContext";
 
 import fallbackProgramsData from "../data/fallbackPrograms.json";
 
@@ -15,6 +16,7 @@ const CATEGORIES = ["All", "housing", "food", "financial", "utilities", "childca
 export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
   initialProgramId,
 }) => {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const effectiveProgramId = searchParams.get("id") || initialProgramId;
   const [query, setQuery] = useState<string>("");
@@ -94,13 +96,13 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1">
-          <Sparkles className="w-4 h-4" /> OpenSearch Hybrid Retrieval & Deterministic Rules
+          <Sparkles className="w-4 h-4" /> {t("OpenSearch Hybrid Retrieval & Deterministic Rules")}
         </div>
         <h1 className="text-3xl font-extrabold text-white tracking-tight">
-          Public Aid Programs Catalog
+          {t("Public Aid Programs Catalog")}
         </h1>
         <p className="text-sm text-slate-400 mt-1 max-w-3xl">
-          Search over 50+ official NYC and New York State safety net programs. Every benefit includes statutory criteria evaluated deterministically without LLM hallucination.
+          {t("Search over 50+ official NYC and New York State safety net programs. Every benefit includes statutory criteria evaluated deterministically without LLM hallucination.")}
         </p>
       </div>
 
@@ -112,7 +114,7 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
             type="text"
             value={query}
             onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Search aid by keyword (e.g. 'eviction rent grant', 'food groceries', 'disability freeze')..."
+            placeholder={t("Search aid by keyword (e.g. 'eviction rent grant', 'food groceries', 'disability freeze')...")}
             className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-inner"
           />
           {loading && (
@@ -135,7 +137,7 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
                   : "bg-slate-900 text-slate-400 border border-slate-800 hover:border-slate-700 hover:text-slate-200"
               }`}
             >
-              {cat}
+              {t(cat)}
             </button>
           ))}
         </div>
@@ -151,7 +153,7 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">
-                  {prog.category}
+                  {t(prog.category)}
                 </span>
                 <span className="text-[11px] font-mono text-slate-400">
                   {prog.region.toUpperCase()}
@@ -159,17 +161,17 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
               </div>
 
               <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
-                {prog.name}
+                {t(prog.name)}
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5 mb-3">{prog.organization}</p>
+              <p className="text-xs text-slate-400 mt-0.5 mb-3">{t(prog.organization)}</p>
 
               <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed mb-4">
-                {prog.description}
+                {t(prog.description)}
               </p>
 
               {prog.income_threshold && (
                 <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-300 mb-4 line-clamp-2">
-                  <span className="font-semibold text-amber-400">Income Limit: </span>
+                  <span className="font-semibold text-amber-400">{t("Income Limit:")} </span>
                   {prog.income_threshold}
                 </div>
               )}
@@ -182,7 +184,7 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
                 className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-750 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>Details</span>
+                <span>{t("Details")}</span>
               </button>
 
               <button
@@ -191,7 +193,7 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:from-emerald-400 hover:to-teal-400 transition-all cursor-pointer shadow-sm shadow-emerald-500/20 flex items-center gap-1.5"
               >
                 <Calculator className="w-3.5 h-3.5" />
-                <span>Check Eligibility</span>
+                <span>{t("Check Eligibility")}</span>
               </button>
             </div>
           </div>
@@ -200,8 +202,8 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
 
       {filteredPrograms.length === 0 && (
         <div className="p-12 text-center rounded-3xl bg-slate-900/40 border border-slate-800 text-slate-400">
-          <p className="text-base font-semibold text-slate-300">No aid programs found</p>
-          <p className="text-xs mt-1">Try clearing your search query or selecting another category.</p>
+          <p className="text-base font-semibold text-slate-300">{t("No aid programs found")}</p>
+          <p className="text-xs mt-1">{t("Try clearing your search query or selecting another category.")}</p>
         </div>
       )}
 

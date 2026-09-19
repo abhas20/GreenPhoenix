@@ -1,19 +1,21 @@
 import React from "react";
 import { Cpu, ShieldCheck, Lock, Scale, Globe, ArrowUpRight } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export const BentoFeatures: React.FC<{ onExplore: () => void }> = ({ onExplore }) => {
+  const { t } = useLanguage();
+
   return (
     <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center max-w-3xl mx-auto mb-12">
         <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-400 mb-2">
-          Architecture & Capabilities
+          {t("Architecture & Capabilities", "Architecture & Capabilities")}
         </h2>
         <h3 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Engineered for Trust, Privacy & Civil-Rights Fairness
+          {t("Engineered for Trust, Privacy & Civil-Rights Fairness", "Engineered for Trust, Privacy & Civil-Rights Fairness")}
         </h3>
         <p className="mt-3 text-sm text-slate-400 leading-relaxed">
-          Unlike generic chatbots that hallucinate aid rules and leak sensitive identities,
-          GreenPhoenix enforces mathematical access barriers and deterministic statutory verification.
+          {t("Unlike generic chatbots that hallucinate aid rules and leak sensitive identities, GreenPhoenix enforces mathematical access barriers and deterministic statutory verification.")}
         </p>
       </div>
 
@@ -33,7 +35,7 @@ export const BentoFeatures: React.FC<{ onExplore: () => void }> = ({ onExplore }
           </div>
 
           <h4 className="text-xl font-bold text-white mb-2">
-            Multi-Agent Conversational Orchestration
+            {t("Multi-Agent Conversational Orchestration")}
           </h4>
           <p className="text-slate-400 text-sm leading-relaxed mb-6">
             Four specialized agents collaborate autonomously. The <strong>Intake Agent</strong> extracts household facts, the <strong>Matching Agent</strong> coordinates OpenSearch dense vector retrieval and hard-bounds verification, the <strong>Document Agent</strong> compiles consolidated verification packs, and the <strong>Audit Agent</strong> verifies fair treatment.
@@ -41,20 +43,20 @@ export const BentoFeatures: React.FC<{ onExplore: () => void }> = ({ onExplore }
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <div className="text-emerald-400 font-bold">Intake Agent</div>
-              <div className="text-slate-400 text-[11px] mt-0.5">Empathetic Extraction</div>
+              <div className="text-emerald-400 font-bold">{t("Intake Agent", "Intake Agent")}</div>
+              <div className="text-slate-400 text-[11px] mt-0.5">{t("Empathetic Extraction", "Empathetic Extraction")}</div>
             </div>
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <div className="text-teal-400 font-bold">Matching Agent</div>
-              <div className="text-slate-400 text-[11px] mt-0.5">Hybrid Vector + Rules</div>
+              <div className="text-teal-400 font-bold">{t("Matching Agent", "Matching Agent")}</div>
+              <div className="text-slate-400 text-[11px] mt-0.5">{t("Hybrid Vector + Rules", "Hybrid Vector + Rules")}</div>
             </div>
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <div className="text-cyan-400 font-bold">Document Agent</div>
-              <div className="text-slate-400 text-[11px] mt-0.5">Hardship Statements</div>
+              <div className="text-cyan-400 font-bold">{t("Document Agent", "Document Agent")}</div>
+              <div className="text-slate-400 text-[11px] mt-0.5">{t("Hardship Statements", "Hardship Statements")}</div>
             </div>
             <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
-              <div className="text-amber-400 font-bold">Audit Agent</div>
-              <div className="text-slate-400 text-[11px] mt-0.5">Bias Replay Monitor</div>
+              <div className="text-amber-400 font-bold">{t("Audit Agent", "Audit Agent")}</div>
+              <div className="text-slate-400 text-[11px] mt-0.5">{t("Bias Replay Monitor", "Bias Replay Monitor")}</div>
             </div>
           </div>
         </div>
@@ -65,7 +67,7 @@ export const BentoFeatures: React.FC<{ onExplore: () => void }> = ({ onExplore }
             <ShieldCheck className="w-6 h-6" />
           </div>
           <h4 className="text-lg font-bold text-white mb-2">
-            Microsoft Presidio PII Vault
+            {t("Microsoft Presidio PII Vault")}
           </h4>
           <p className="text-slate-400 text-xs leading-relaxed mb-4">
             Names, phone numbers, SSNs, and street addresses are stripped before leaving your browser. LLMs and vector indexes only see surrogate tokens like <code className="text-emerald-300">&lt;PERSON_1&gt;</code>.
@@ -82,7 +84,7 @@ export const BentoFeatures: React.FC<{ onExplore: () => void }> = ({ onExplore }
             <Lock className="w-6 h-6" />
           </div>
           <h4 className="text-lg font-bold text-white mb-2">
-            AWS Cedar Access Control
+            {t("AWS Cedar Access Control")}
           </h4>
           <p className="text-slate-400 text-xs leading-relaxed">
             Every agent action evaluates against formal Cedar policies. Caseworkers are strictly scoped to their organization (<code className="text-blue-300">orgId == principal.orgId</code>), preventing cross-agency case leaks.
@@ -95,7 +97,7 @@ export const BentoFeatures: React.FC<{ onExplore: () => void }> = ({ onExplore }
             <Scale className="w-6 h-6" />
           </div>
           <h4 className="text-lg font-bold text-white mb-2">
-            Algorithmic Fairness Watchdog
+            {t("Algorithmic Fairness Watchdog")}
           </h4>
           <p className="text-slate-400 text-xs leading-relaxed">
             Out-of-band synthetic testing replays identical economic crisis profiles across demographic and language cohorts to enforce the legal <strong>0.80 Disparate Impact Ratio (DIR)</strong>.
@@ -108,7 +110,7 @@ export const BentoFeatures: React.FC<{ onExplore: () => void }> = ({ onExplore }
             <Globe className="w-6 h-6" />
           </div>
           <h4 className="text-lg font-bold text-white mb-2">
-            Indian & Global Languages
+            {t("Indian & Global Languages")}
           </h4>
           <p className="text-slate-400 text-xs leading-relaxed mb-3">
             Speaks Hindi, Bengali, Tamil, Telugu, Gujarati, Marathi, Punjabi, Urdu, Spanish, Chinese, Russian, and Arabic with automatic grounding in NYC statutory rules.
@@ -118,7 +120,7 @@ export const BentoFeatures: React.FC<{ onExplore: () => void }> = ({ onExplore }
             onClick={onExplore}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
           >
-            <span>Explore Aid Catalog</span>
+            <span>{t("Explore Aid Catalog", "Explore Aid Catalog")}</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>

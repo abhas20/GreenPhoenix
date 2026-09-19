@@ -2,8 +2,11 @@ import { api } from "./api";
 import type { ChatTurnResponse, SessionState } from "../types/chat";
 
 export const chatService = {
-  async sendTurn(message: string): Promise<ChatTurnResponse> {
-    return api.post<ChatTurnResponse>("/chat/turn", { message });
+  async sendTurn(message: string, language?: string): Promise<ChatTurnResponse> {
+    return api.post<ChatTurnResponse>("/chat/turn", {
+      message,
+      language: language || "en",
+    });
   },
 
   async getCurrentSession(): Promise<SessionState> {

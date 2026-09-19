@@ -1,5 +1,6 @@
 import React from "react";
 import { CheckCircle2, ChevronRight } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface ProgramTickerProps {
   onSelectProgram: (programId: string) => void;
@@ -51,21 +52,23 @@ const TOP_PROGRAMS = [
 ];
 
 export const ProgramTicker: React.FC<ProgramTickerProps> = ({ onSelectProgram }) => {
+  const { t } = useLanguage();
+
   return (
     <section className="py-12 border-y border-slate-800/80 bg-slate-950/40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">
-              Available Aid Programs
+              {t("Available Aid Programs")}
             </span>
             <h3 className="text-2xl font-bold text-white mt-1">
-              Top NYC Public Safety Net Benefits
+              {t("Top NYC Public Safety Net Benefits")}
             </h3>
           </div>
           <div className="text-xs text-slate-400 flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>Statutory rules updated from official NYC Open Data</span>
+            <span>{t("Statutory rules updated from official NYC Open Data")}</span>
           </div>
         </div>
 
@@ -78,12 +81,12 @@ export const ProgramTicker: React.FC<ProgramTickerProps> = ({ onSelectProgram })
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-900/60 border border-current">
-                  {prog.badge}
+                  {t(prog.badge)}
                 </span>
                 <ChevronRight className="w-4 h-4 opacity-60 group-hover:translate-x-1 transition-transform" />
               </div>
-              <h4 className="text-base font-bold text-white mb-1">{prog.name}</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">{prog.highlight}</p>
+              <h4 className="text-base font-bold text-white mb-1">{t(prog.name)}</h4>
+              <p className="text-xs text-slate-300 leading-relaxed">{t(prog.highlight)}</p>
             </div>
           ))}
         </div>

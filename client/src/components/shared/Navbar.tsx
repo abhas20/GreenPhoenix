@@ -13,12 +13,14 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { LanguageDropdown } from "./LanguageDropdown";
 import { QuickExitButton } from "./QuickExitButton";
 
 export const Navbar: React.FC = () => {
   const { user, role, logout } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -27,23 +29,23 @@ export const Navbar: React.FC = () => {
 
   // Base links: Only Public Applicant sees "Crisis Intake"
   const baseLinks = [
-    { to: "/", label: "Overview", icon: Compass },
+    { to: "/", label: t("Overview"), icon: Compass },
     ...(!isStaff
-      ? [{ to: "/crisis", label: "Crisis Intake", icon: Sparkles, highlight: true }]
+      ? [{ to: "/crisis", label: t("Crisis Intake"), icon: Sparkles, highlight: true }]
       : []),
-    { to: "/programs", label: "Aid Directory", icon: BookOpen },
+    { to: "/programs", label: t("Aid Directory"), icon: BookOpen },
   ];
 
   // Sensitive staff links displayed strictly if the current role is authorized
   const staffLinks: { to: string; label: string; icon: any }[] = [];
   if (role === "Caseworker" || role === "Admin") {
-    staffLinks.push({ to: "/caseworker", label: "Caseworker Desk", icon: Users });
+    staffLinks.push({ to: "/caseworker", label: t("Caseworker Desk"), icon: Users });
   }
   if (role === "Analyst" || role === "Admin") {
-    staffLinks.push({ to: "/analyst", label: "Fairness Hub", icon: BarChart3 });
+    staffLinks.push({ to: "/analyst", label: t("Fairness Hub"), icon: BarChart3 });
   }
   if (role === "Admin") {
-    staffLinks.push({ to: "/admin", label: "Admin Ops", icon: Settings });
+    staffLinks.push({ to: "/admin", label: t("Admin Ops"), icon: Settings });
   }
 
   const handleSignOut = () => {
@@ -78,7 +80,7 @@ export const Navbar: React.FC = () => {
                 </span>
               </div>
               <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium tracking-normal -mt-0.5 hidden xs:inline">
-                Community Aid Navigator
+                {t("Community Aid Navigator")}
               </span>
             </div>
           </Link>
@@ -157,8 +159,8 @@ export const Navbar: React.FC = () => {
                   }`}
                 >
                   <Lock className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Staff Login</span>
-                  <span className="sm:hidden">Login</span>
+                  <span className="hidden sm:inline">{t("Staff Login")}</span>
+                  <span className="sm:hidden">{t("Login", "Login")}</span>
                 </Link>
               </div>
             )}
@@ -181,14 +183,14 @@ export const Navbar: React.FC = () => {
         <div className="lg:hidden border-t border-slate-800/80 bg-slate-950/98 backdrop-blur-2xl px-4 py-4 space-y-3 animate-fade-in shadow-2xl">
           {/* Active Role badge in mobile menu */}
           <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs">
-            <span className="text-slate-400 font-medium">Active Identity:</span>
+            <span className="text-slate-400 font-medium">{t("Active Identity:")}</span>
             <span className="font-bold text-white">
-              {!isStaff ? "Public Applicant" : `${role} (${user?.name})`}
+              {!isStaff ? t("Public Applicant") : `${role} (${user?.name})`}
             </span>
           </div>
 
           <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2">
-            Navigation Menu
+            {t("Navigation Menu", "Navigation Menu")}
           </div>
           <div className="grid grid-cols-1 gap-1">
             {baseLinks.map((link) => {
@@ -211,7 +213,7 @@ export const Navbar: React.FC = () => {
                   </div>
                   {link.highlight && (
                     <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-mono">
-                      Crisis Hub
+                      {t("Crisis Hub", "Crisis Hub")}
                     </span>
                   )}
                 </Link>
@@ -251,7 +253,7 @@ export const Navbar: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold shadow-md shadow-emerald-500/20"
               >
                 <Lock className="w-3.5 h-3.5" />
-                <span>Staff Sign In / Register</span>
+                <span>{t("Staff Sign In / Register", "Staff Sign In / Register")}</span>
               </Link>
             ) : (
               <button
@@ -260,7 +262,7 @@ export const Navbar: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs font-semibold text-rose-300 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>Sign Out ({user?.name})</span>
+                <span>{t("Sign Out")} ({user?.name})</span>
               </button>
             )}
           </div>

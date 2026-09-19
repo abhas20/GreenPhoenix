@@ -11,7 +11,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onStartCrisisFlow,
   onExplorePrograms,
 }) => {
-  const { currentLanguage, isTranslationActive } = useLanguage();
+  const { currentLanguage, isTranslationActive, t } = useLanguage();
 
   return (
     <div className="relative overflow-hidden pt-12 pb-20 md:pt-16 md:pb-28">
@@ -26,29 +26,31 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span>Next-Gen Multi-Agent Aid Navigation</span>
+          <span>{t("Next-Gen Multi-Agent Aid Navigation")}</span>
           <span className="text-slate-500">•</span>
-          <span className="text-slate-400">Presidio Vault & Cedar Gate Active</span>
+          <span className="text-slate-400">{t("Presidio Vault & Cedar Gate Active")}</span>
         </div>
 
         {/* Hero Title */}
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.15]">
-          Find the Emergency Aid You Deserve,{" "}
+          {t("Find the Emergency Aid You Deserve,")}{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
-            Guaranteed Private & Fair.
+            {t("Guaranteed Private & Fair.")}
           </span>
         </h1>
 
         {/* Hero Subtitle */}
         <p className="mt-5 text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
-          Behind on rent, facing eviction, or struggling with groceries? Talk to our empathetic, multilingual crisis agent. We match you to official NYC and State benefits using deterministic eligibility checks—with <strong>zero data selling</strong> and <strong>complete PII encryption</strong>.
+          {t(
+            "Behind on rent, facing eviction, or struggling with groceries? Talk to our empathetic, multilingual crisis agent. We match you to official NYC and State benefits using deterministic eligibility checks—with zero data selling and complete PII encryption."
+          )}
         </p>
 
         {isTranslationActive && (
           <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs bg-amber-500/15 border border-amber-500/30 text-amber-200">
-            <span>🌐 Mother-tongue support active:</span>
+            <span>🌐 {t("Mother-tongue support active:")}</span>
             <strong>{currentLanguage.nativeName} ({currentLanguage.name})</strong>
-            <span>• Chat freely in your language</span>
+            <span>• {t("Chat freely in your language")}</span>
           </div>
         )}
 
@@ -62,7 +64,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
             <Sparkles className="w-5 h-5 text-slate-950 animate-bounce" />
             <span className="relative z-10 tracking-wide font-extrabold">
-              Speak to Aid Navigator — Get Help Now
+              {t("Speak to Aid Navigator — Get Help Now")}
             </span>
             <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform relative z-10" />
           </button>
@@ -73,7 +75,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             className="w-full sm:w-auto px-6 py-4 rounded-2xl font-semibold text-sm bg-slate-900/90 text-slate-200 border border-slate-700 hover:border-slate-500 hover:bg-slate-850 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
           >
             <FileText className="w-4 h-4 text-slate-400" />
-            <span>Browse 50+ Aid Programs</span>
+            <span>{t("Browse 50+ Aid Programs")}</span>
           </button>
         </div>
 
@@ -81,19 +83,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         <div className="mt-10 pt-8 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs text-slate-400">
           <div className="flex items-center justify-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Microsoft Presidio PII Shield</span>
+            <span>{t("Microsoft Presidio PII Shield", "Microsoft Presidio PII Shield")}</span>
           </div>
           <div className="flex items-center justify-center gap-2">
             <Lock className="w-4 h-4 text-teal-400 shrink-0" />
-            <span>AWS Cedar Fine-Grained Gate</span>
+            <span>{t("AWS Cedar Fine-Grained Gate", "AWS Cedar Fine-Grained Gate")}</span>
           </div>
           <div className="flex items-center justify-center gap-2">
             <HeartHandshake className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span>Zero Hallucinated Eligibility</span>
+            <span>{t("Zero Hallucinated Eligibility", "Zero Hallucinated Eligibility")}</span>
           </div>
           <div className="flex items-center justify-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>Indian & Global Languages</span>
+            <span>{t("Indian & Global Languages", "Indian & Global Languages")}</span>
           </div>
         </div>
       </div>

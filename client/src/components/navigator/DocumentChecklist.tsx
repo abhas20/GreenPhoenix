@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { CheckSquare, Square, Lightbulb, FileCheck2 } from "lucide-react";
 import type { DocumentItem } from "../../types/program";
+import { useLanguage } from "../../context/LanguageContext";
 
 export const DocumentChecklist: React.FC<{ items: DocumentItem[] }> = ({ items }) => {
+  const { t } = useLanguage();
   const [checkedMap, setCheckedMap] = useState<Record<string, boolean>>({});
 
   const toggleCheck = (docName: string) => {
@@ -18,7 +20,7 @@ export const DocumentChecklist: React.FC<{ items: DocumentItem[] }> = ({ items }
   if (items.length === 0) {
     return (
       <div className="p-6 text-center text-slate-400 text-xs bg-slate-900/40 rounded-2xl border border-slate-800">
-        No verification checklist compiled yet. As you chat, the Document Agent will compile required documents.
+        {t("No verification checklist compiled yet. As you chat, the Document Agent will compile required documents.")}
       </div>
     );
   }
@@ -30,10 +32,10 @@ export const DocumentChecklist: React.FC<{ items: DocumentItem[] }> = ({ items }
         <div className="flex items-center justify-between text-xs mb-1.5">
           <span className="font-semibold text-white flex items-center gap-1.5">
             <FileCheck2 className="w-4 h-4 text-emerald-400" />
-            <span>Document Readiness Progress</span>
+            <span>{t("Document Readiness Progress")}</span>
           </span>
           <span className="font-mono text-emerald-400 font-bold">
-            {completedCount} of {items.length} Ready ({progressPercent}%)
+            {completedCount} {t("of")} {items.length} {t("Ready")} ({progressPercent}%)
           </span>
         </div>
         <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
@@ -77,7 +79,7 @@ export const DocumentChecklist: React.FC<{ items: DocumentItem[] }> = ({ items }
                         isChecked ? "line-through text-slate-400" : "text-white"
                       }`}
                     >
-                      {doc.document_name}
+                      {t(doc.document_name)}
                     </h5>
                     {doc.required_for_programs && doc.required_for_programs.length > 0 && (
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
@@ -87,13 +89,13 @@ export const DocumentChecklist: React.FC<{ items: DocumentItem[] }> = ({ items }
                   </div>
 
                   <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    {doc.description}
+                    {t(doc.description)}
                   </p>
 
                   {doc.tips_for_applicant && (
                     <div className="mt-2.5 flex items-start gap-2 p-2 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-amber-200">
                       <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                      <span className="leading-normal">{doc.tips_for_applicant}</span>
+                      <span className="leading-normal">{t(doc.tips_for_applicant)}</span>
                     </div>
                   )}
                 </div>

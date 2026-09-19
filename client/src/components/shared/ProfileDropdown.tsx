@@ -17,7 +17,7 @@ import { useLanguage, SUPPORTED_LANGUAGES } from "../../context/LanguageContext"
 
 export const ProfileDropdown: React.FC = () => {
   const { user, role, logout } = useAuth();
-  const { currentLanguage, setLanguage } = useLanguage();
+  const { currentLanguage, setLanguage, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -170,7 +170,7 @@ export const ProfileDropdown: React.FC = () => {
             <div className="px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 flex items-center gap-2">
               <Building2 className="w-4 h-4 shrink-0 text-blue-400" />
               <div className="text-[11px] leading-tight">
-                <span>Tenant Agency: </span>
+                <span>{t("Tenant Agency:")} </span>
                 <strong className="font-mono text-white">{user.org_id}</strong>
               </div>
             </div>
@@ -179,7 +179,7 @@ export const ProfileDropdown: React.FC = () => {
           {/* Quick Staff Navigation Links */}
           <div className="space-y-1">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">
-              Authorized Portals
+              {t("Authorized Portals")}
             </div>
             {(role === "Caseworker" || role === "Admin") && (
               <Link
@@ -189,7 +189,7 @@ export const ProfileDropdown: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <Users className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="font-medium">Caseworker Queue & Dossiers</span>
+                  <span className="font-medium">{t("Caseworker Desk")}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 font-mono">/caseworker</span>
               </Link>
@@ -202,7 +202,7 @@ export const ProfileDropdown: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <BarChart3 className="w-3.5 h-3.5 text-purple-400" />
-                  <span className="font-medium">Fairness Hub & DIR Monitor</span>
+                  <span className="font-medium">{t("Fairness Hub")}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 font-mono">/analyst</span>
               </Link>
@@ -215,7 +215,7 @@ export const ProfileDropdown: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <Settings className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="font-medium">System Admin Operations</span>
+                  <span className="font-medium">{t("Admin Ops")}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 font-mono">/admin</span>
               </Link>
@@ -226,14 +226,14 @@ export const ProfileDropdown: React.FC = () => {
           <div className="pt-2 border-t border-slate-800 space-y-1.5">
             <div className="flex items-center justify-between px-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Language
+                {t("Language")}
               </span>
               <button
                 type="button"
                 onClick={() => setShowLangPicker(!showLangPicker)}
                 className="text-[11px] font-semibold text-emerald-400 hover:underline cursor-pointer"
               >
-                {showLangPicker ? "Hide List" : "Change Language"}
+                {showLangPicker ? t("Hide List", "Hide List") : t("Change Language", "Change Language")}
               </button>
             </div>
 
@@ -245,7 +245,7 @@ export const ProfileDropdown: React.FC = () => {
                 <span className="text-slate-400 text-[10px]">({currentLanguage.name})</span>
               </div>
               <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded">
-                Active
+                {t("Active", "Active")}
               </span>
             </div>
 
@@ -284,11 +284,11 @@ export const ProfileDropdown: React.FC = () => {
           <div className="pt-2 border-t border-slate-800 grid grid-cols-2 gap-2 text-[10px]">
             <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center gap-1.5 text-emerald-400">
               <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-              <span>Presidio Vault Encrypted</span>
+              <span>{t("Presidio Vault Encrypted")}</span>
             </div>
             <div className="p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-center gap-1.5 text-blue-400">
               <Lock className="w-3.5 h-3.5 shrink-0" />
-              <span>Cedar RBAC Enforced</span>
+              <span>{t("Cedar RBAC Enforced")}</span>
             </div>
           </div>
 
@@ -300,7 +300,7 @@ export const ProfileDropdown: React.FC = () => {
               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold transition-colors cursor-pointer text-xs"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out Session</span>
+              <span>{t("Sign Out")}</span>
             </button>
           </div>
         </div>

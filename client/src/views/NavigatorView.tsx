@@ -40,7 +40,7 @@ const DEFAULT_PROFILE: ApplicantProfile = {
 };
 
 export const NavigatorView: React.FC = () => {
-  const { currentLanguage, isTranslationActive } = useLanguage();
+  const { currentLanguage, isTranslationActive, t } = useLanguage();
 
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<SessionHistoryItem[]>([INITIAL_WELCOME]);
@@ -81,13 +81,13 @@ export const NavigatorView: React.FC = () => {
           }
         }
       })
-      .catch(() => {
-        // Fresh session
+      .catch((err) => {
+        console.warn("Session rehydration check (unseeded session is normal):", err);
       });
   }, []);
 
-  const handleSendMessage = async (textToSend?: string) => {
-    const text = (textToSend || inputMessage).trim();
+  const handleSendMessage = async (customText?: string) => {
+    const text = (customText || inputMessage).trim();
     if (!text || loading) return;
 
     setInputMessage("");
@@ -103,7 +103,7 @@ export const NavigatorView: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await chatService.sendTurn(text);
+      const res = await chatService.sendTurn(text, currentLanguage.code);
 
       const botMsg: SessionHistoryItem = {
         role: "assistant",
@@ -172,7 +172,7 @@ export const NavigatorView: React.FC = () => {
           }`}
         >
           <MessageSquare className="w-3.5 h-3.5" />
-          <span>Chat Assistant</span>
+          <span>{t("Chat Assistant", "Chat Assistant")}</span>
         </button>
 
         <button
@@ -185,7 +185,7 @@ export const NavigatorView: React.FC = () => {
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>Matches & Checklist</span>
+          <span>{t("Matches & Checklist", "Matches & Checklist")}</span>
           {matchCount > 0 && (
             <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-400/20 text-emerald-300">
               {matchCount}
@@ -212,11 +212,11 @@ export const NavigatorView: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
-                  <span>Aid Intake Assistant</span>
+                  <span>{t("Aid Intake Assistant", "Aid Intake Assistant")}</span>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 </h3>
                 <p className="text-[11px] text-slate-400 -mt-0.5">
-                  Empathetic multi-agent intake & fact extraction
+                  {t("Empathetic multi-agent intake & fact extraction", "Empathetic multi-agent intake & fact extraction")}
                 </p>
               </div>
             </div>
@@ -228,7 +228,7 @@ export const NavigatorView: React.FC = () => {
               title="Purge session history"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset</span>
+              <span>{t("Reset")}</span>
             </button>
           </div>
 
@@ -236,12 +236,12 @@ export const NavigatorView: React.FC = () => {
           <div className="px-4 py-2 bg-slate-950/40 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 shrink-0">
             <div className="flex items-center gap-1.5 text-emerald-300">
               <Shield className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Presidio PII Vault Active (Zero raw names/SSNs stored)</span>
+              <span>{t("Presidio PII Vault Active (Zero raw names/SSNs stored)", "Presidio PII Vault Active (Zero raw names/SSNs stored)")}</span>
             </div>
             {isTranslationActive && (
               <div className="flex items-center gap-1 text-amber-300 font-medium">
                 <Globe className="w-3 h-3" />
-                <span>{currentLanguage.nativeName} ⇄ English auto-translation</span>
+                <span>{currentLanguage.nativeName} ⇄ English {t("Auto-Translate active", "auto-translation")}</span>
               </div>
             )}
           </div>
@@ -256,7 +256,10 @@ export const NavigatorView: React.FC = () => {
               <MessageBubble
                 message={{
                   role: "assistant",
-                  content: "Analyzing your request, checking statutory criteria, and extracting profile facts...",
+                  content: t(
+                    "Analyzing your request, checking statutory criteria, and extracting profile facts...",
+                    "Analyzing your request, checking statutory criteria, and extracting profile facts..."
+                  ),
                   timestamp: new Date().toISOString(),
                 }}
                 isStreaming
@@ -295,8 +298,8 @@ export const NavigatorView: React.FC = () => {
                 rows={2}
                 placeholder={
                   isTranslationActive
-                    ? `Type your situation in ${currentLanguage.nativeName} (e.g. rent, food, bills)...`
-                    : "Describe your situation (e.g. Behind on rent in Brooklyn, making $28,000, 2 children)..."
+                    ? `${t("Type your situation in", "Type your situation in")} ${currentLanguage.nativeName} (e.g. rent, food, bills)...`
+                    : t("Describe your situation (e.g. Behind on rent in Brooklyn, making $28,000, 2 children)...")
                 }
                 className="flex-1 bg-transparent text-sm text-white placeholder-slate-400 resize-none focus:outline-none px-2 py-1 leading-relaxed"
               />
@@ -305,14 +308,14 @@ export const NavigatorView: React.FC = () => {
                 onClick={() => handleSendMessage()}
                 disabled={loading || !inputMessage.trim()}
                 className="p-3 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:from-emerald-400 hover:to-teal-400 transition-all cursor-pointer disabled:opacity-40 disabled:pointer-events-none shadow-md shadow-emerald-500/20 shrink-0"
-                title="Send Message"
+                title={t("Send Message", "Send Message")}
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
             </div>
             <div className="flex items-center justify-between text-[10px] text-slate-400 px-2 mt-1.5">
-              <span>Press <strong>Enter</strong> to send, <strong>Shift + Enter</strong> for new line</span>
-              <span>100% Confidential & Free</span>
+              <span>{t("Press Enter to send, Shift + Enter for new line")}</span>
+              <span>{t("100% Confidential & Free")}</span>
             </div>
           </div>
         </div>
@@ -339,7 +342,7 @@ export const NavigatorView: React.FC = () => {
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Eligible Aid</span>
+                <span>{t("Verified Benefit Matches", "Eligible Aid")}</span>
                 {matchCount > 0 && (
                   <span
                     className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
@@ -364,7 +367,7 @@ export const NavigatorView: React.FC = () => {
                 }`}
               >
                 <FileCheck className="w-3.5 h-3.5" />
-                <span>Checklist</span>
+                <span>{t("Required Documents", "Checklist")}</span>
                 {docCount > 0 && (
                   <span
                     className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
@@ -389,7 +392,7 @@ export const NavigatorView: React.FC = () => {
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>Hardship Letter</span>
+                <span>{t("Hardship Statements", "Hardship Letter")}</span>
               </button>
 
               {/* Tab 4: Profile Facts */}
@@ -403,7 +406,7 @@ export const NavigatorView: React.FC = () => {
                 }`}
               >
                 <UserCheck className="w-3.5 h-3.5" />
-                <span>Profile</span>
+                <span>{t("Extracted Profile", "Profile")}</span>
               </button>
             </div>
           </div>
@@ -417,10 +420,10 @@ export const NavigatorView: React.FC = () => {
                   <>
                     <div className="flex items-center justify-between text-xs text-slate-400">
                       <span>
-                        Found <strong>{matchCount}</strong> qualified program{matchCount > 1 ? "s" : ""}
+                        {t("Found")} <strong className="text-white">{matchCount}</strong> {t("qualified programs")}
                       </span>
                       <span className="text-[11px] font-mono text-emerald-400">
-                        Evaluated {matchingResult?.total_candidates_evaluated || 12} candidates
+                        {t("Evaluated")} {matchingResult?.total_candidates_evaluated || 12} {t("candidates")}
                       </span>
                     </div>
 
@@ -435,9 +438,9 @@ export const NavigatorView: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
                       <Sparkles className="w-7 h-7" />
                     </div>
-                    <h4 className="text-base font-bold text-white">Live Matches Will Appear Here</h4>
+                    <h4 className="text-base font-bold text-white">{t("Live Matches Will Appear Here")}</h4>
                     <p className="text-xs max-w-sm mx-auto leading-relaxed text-slate-400">
-                      As you converse with the assistant on the left, our deterministic matching agent will investigate NYC aid databases and display verified benefits here.
+                      {t("As you converse with the assistant on the left, our deterministic matching agent will investigate NYC aid databases and display verified benefits here.")}
                     </p>
                   </div>
                 )}
