@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     CEDAR_POLICIES_PATH: str = "cedar/policies"
     DYNAMODB_ENDPOINT_URL: Optional[str] = os.getenv("DYNAMODB_ENDPOINT_URL", "http://localhost:8001")
     DYNAMODB_TABLE_USERS: str = os.getenv("DYNAMODB_TABLE_USERS", "greenphoenix-users")
+    DYNAMODB_TABLE_TRANSLATIONS: str = os.getenv("DYNAMODB_TABLE_TRANSLATIONS", "greenphoenix-translations")
     DYNAMODB_REGION: str = os.getenv("DYNAMODB_REGION", "us-east-1")
 
     # csv / dataset paths

@@ -9,6 +9,7 @@ from server.config import settings
 from server.tools.search_tools import _get_opensearch_client, ensure_hybrid_search_pipeline
 from server.agents.orchestrator import _get_redis_client
 from server.core.user_store import ensure_user_table
+from server.core.translation_store import ensure_translations_table
 from server.api import (
     chat_router,
     programs_router,
@@ -52,11 +53,12 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.warning(f"Redis connection failed ({e}), using in-memory store.")
 
-    # 3. DynamoDB Check & User Store Table Initialization
+    # 3. DynamoDB Check & User Store / Translation Store Table Initialization
     try:
         ensure_user_table()
+        ensure_translations_table()
     except Exception as e:
-        log.warning(f"DynamoDB user table initialization check encountered error: {e}")
+        log.warning(f"DynamoDB table initialization check encountered error: {e}")
 
     yield
 

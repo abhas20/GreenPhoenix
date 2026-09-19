@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from server.core.translation import translation_service, SUPPORTED_LANGUAGES
 from server.agents.orchestrator import _get_redis_client
 from server.core.rate_limit import check_translate_rate_limit
+from server.core.translation_store import translation_store
 
 log = logging.getLogger(__name__)
 
@@ -97,7 +98,29 @@ def translate_batch_endpoint(req: BatchTranslateRequest):
             else:
                 missing_texts.append(text)
 
-    # 2. Translate Missing Texts via Dual-Engine Service
+    # 2. Check DynamoDB Persistent Store for any Redis-missed texts
+    if missing_texts:
+        try:
+            dynamo_results = translation_store.get_translations(target_lang, missing_texts)
+            if dynamo_results:
+                for t, val in dynamo_results.items():
+                    translations[t] = val
+                    cached_count += 1
+                
+                # Backfill into Redis in-memory cache for ultra-low latency next time
+                if redis_client:
+                    try:
+                        redis_client.hset(redis_key, mapping=dynamo_results)
+                        redis_client.expire(redis_key, 60 * 60 * 24 * 30)
+                    except Exception as e:
+                        log.warning(f"[i18n] Redis backfill error: {e}")
+
+                # Update remaining missing texts
+                missing_texts = [t for t in missing_texts if t not in dynamo_results]
+        except Exception as e:
+            log.warning(f"[i18n] DynamoDB lookup error ({e}).")
+
+    # 3. Translate Truly Missing Texts via Dual-Engine Service
     newly_translated_count = 0
     if missing_texts:
         # Deduplicate
@@ -111,7 +134,13 @@ def translate_batch_endpoint(req: BatchTranslateRequest):
 
         newly_translated_count = len(translated_results)
 
-        # 3. Write newly translated strings to Cache
+        # 4. Write newly translated strings to Persistent DynamoDB Store
+        try:
+            translation_store.save_translations(target_lang, translated_results)
+        except Exception as e:
+            log.warning(f"[i18n] DynamoDB save error: {e}")
+
+        # 5. Write newly translated strings to Redis Fast Cache
         if redis_client and translated_results:
             try:
                 redis_client.hset(redis_key, mapping=translated_results)
@@ -140,20 +169,40 @@ def translate_batch_endpoint(req: BatchTranslateRequest):
 def get_language_cache(target_language: str):
     """
     Retrieves the entire cached translation dictionary for a target language.
-    Enables instant client-side dictionary hydration upon language selection.
+    1. Checks Redis first for sub-millisecond response.
+    2. If Redis is cold/empty, pulls from persistent DynamoDB and backfills Redis.
+    3. Falls back to memory cache.
     """
     target_lang = target_language.strip().lower()
     if target_lang == "en":
         return {}
 
     redis_client = _get_redis()
+    redis_key = f"greenphoenix:i18n:{target_lang}"
+
+    # 1. Fast path: Redis cache
     if redis_client:
         try:
-            cached = redis_client.hgetall(f"greenphoenix:i18n:{target_lang}")
+            cached = redis_client.hgetall(redis_key)
             if cached:
                 return cached
         except Exception as e:
             log.warning(f"[i18n] Redis hgetall error: {e}")
+
+    # 2. Durable path: DynamoDB persistent store
+    try:
+        dynamo_dict = translation_store.get_all_for_language(target_lang)
+        if dynamo_dict:
+            # Backfill Redis so subsequent calls hit RAM
+            if redis_client:
+                try:
+                    redis_client.hset(redis_key, mapping=dynamo_dict)
+                    redis_client.expire(redis_key, 60 * 60 * 24 * 30)
+                except Exception as e:
+                    log.warning(f"[i18n] Redis backfill from DynamoDB error: {e}")
+            return dynamo_dict
+    except Exception as e:
+        log.warning(f"[i18n] DynamoDB get_all_for_language error: {e}")
 
     return _MEMORY_I18N_CACHE.get(target_lang, {})
 
