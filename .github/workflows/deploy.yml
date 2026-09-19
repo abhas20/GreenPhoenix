@@ -28,6 +28,8 @@ jobs:
 
       - name: Validate Docker Compose Configuration
         run: |
+          mkdir -p server
+          touch server/.env
           docker compose -f docker-compose.prod.yml config
 
       - name: Setup Bun
