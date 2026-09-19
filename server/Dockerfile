@@ -1,14 +1,5 @@
-# ------------------------------------------------------------------------------
-# GreenPhoenix FastAPI Backend - Astral UV Production Multi-Stage Dockerfile
-#
-# Follows Astral's official uv standards:
-# 1. Official Astral base image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
-# 2. Bytecode pre-compilation (UV_COMPILE_BYTECODE=1) for fast cold starts
-# 3. Layered dependency sync for optimal Docker caching
-# 4. Hardened, unprivileged final production runtime
-#
-# Build command from repository root:
-#   docker build -t greenphoenix-backend -f server/Dockerfile .
+#------------------------------------------------------------------------------
+# Build command from repository root: docker build -t greenphoenix-backend -f server/Dockerfile .
 # ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------

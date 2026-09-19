@@ -1,12 +1,7 @@
 # ==============================================================================
 # GreenPhoenix - Production Docker Compose Configuration for Cloud / EC2
-#
-# Cloud Architecture Notes:
-# - DynamoDB & AWS Translate run natively in AWS Cloud (no local containers).
-# - Nginx Frontend serves compiled React assets and reverse-proxies /api to Backend.
-# - FastAPI Backend connects to AWS DynamoDB, AWS Translate, OpenSearch, and Redis.
-#
-# Usage on EC2:
+# ==============================================================================
+# Usage :
 #   docker compose -f docker-compose.prod.yml up --build -d
 # ==============================================================================
 
@@ -22,6 +17,7 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     environment:
       - BACKEND_URL=http://backend:8000
     depends_on:
@@ -76,8 +72,6 @@ services:
     container_name: greenphoenix-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
     networks:
@@ -108,8 +102,6 @@ services:
       nofile:
         soft: 65536
         hard: 65536
-    ports:
-      - "9200:9200"
     volumes:
       - opensearch-data:/usr/share/opensearch/data
     networks:
