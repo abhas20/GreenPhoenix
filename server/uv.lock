@@ -1862,6 +1862,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "bcrypt" },
+    { name = "boto3" },
     { name = "cedar-policy" },
     { name = "email-validator" },
     { name = "fastapi" },
@@ -1882,6 +1883,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "bcrypt", specifier = ">=5.0.0" },
+    { name = "boto3", specifier = ">=1.43.89" },
     { name = "cedar-policy", specifier = ">=0.0.1" },
     { name = "email-validator", specifier = ">=2.3.0" },
     { name = "fastapi", specifier = ">=0.141.1" },

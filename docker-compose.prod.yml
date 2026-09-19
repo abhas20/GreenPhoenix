@@ -1,0 +1,137 @@
+# ==============================================================================
+# GreenPhoenix - Production Docker Compose Configuration for Cloud / EC2
+#
+# Cloud Architecture Notes:
+# - DynamoDB & AWS Translate run natively in AWS Cloud (no local containers).
+# - Nginx Frontend serves compiled React assets and reverse-proxies /api to Backend.
+# - FastAPI Backend connects to AWS DynamoDB, AWS Translate, OpenSearch, and Redis.
+#
+# Usage on EC2:
+#   docker compose -f docker-compose.prod.yml up --build -d
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Frontend Web Service (Nginx + React SPA)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: greenphoenix-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - greenphoenix-net
+
+  # ----------------------------------------------------------------------------
+  # 2. Backend API Service (FastAPI + Presidio + Cedar + Dual-Engine MT)
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: greenphoenix-backend
+    restart: unless-stopped
+    env_file:
+      - ./server/.env
+    environment:
+      # Clear local DynamoDB endpoint so boto3 connects directly to AWS Cloud DynamoDB
+      - DYNAMODB_ENDPOINT_URL=
+      - DYNAMODB_REGION=us-east-1
+      - DYNAMODB_TABLE_USERS=greenphoenix-users
+      - DYNAMODB_TABLE_TRANSLATIONS=greenphoenix-translations
+      - REDIS_URL=redis://redis:6379/0
+      - OPENSEARCH_HOST=http://opensearch:9200
+      - TRANSLATE_PROVIDER=aws
+      - ENVIRONMENT=production
+      - DEBUG=false
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    networks:
+      - greenphoenix-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  # ----------------------------------------------------------------------------
+  # 3. Redis In-Memory Cache & Rate Limiting Engine
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: greenphoenix-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - greenphoenix-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # 4. OpenSearch Hybrid Search & Regulatory Vector Index
+  # ----------------------------------------------------------------------------
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    container_name: greenphoenix-opensearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    networks:
+      - greenphoenix-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+# ------------------------------------------------------------------------------
+# Persistent Storage Volumes
+# ------------------------------------------------------------------------------
+volumes:
+  opensearch-data:
+    driver: local
+  redis-data:
+    driver: local
+
+# ------------------------------------------------------------------------------
+# Bridge Network for Service Interconnection
+# ------------------------------------------------------------------------------
+networks:
+  greenphoenix-net:
+    driver: bridge

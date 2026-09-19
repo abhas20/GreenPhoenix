@@ -30,28 +30,36 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_dynamodb_client():
     """Returns low-level boto3 DynamoDB client with appropriate endpoint."""
-    if settings.DYNAMODB_ENDPOINT_URL:
+    if settings.DYNAMODB_ENDPOINT_URL and settings.DYNAMODB_ENDPOINT_URL.strip():
         return boto3.client(
             "dynamodb",
-            endpoint_url=settings.DYNAMODB_ENDPOINT_URL,
+            endpoint_url=settings.DYNAMODB_ENDPOINT_URL.strip(),
             region_name=settings.DYNAMODB_REGION,
             aws_access_key_id="local",
             aws_secret_access_key="local"
         )
-    return boto3.client("dynamodb", region_name=settings.DYNAMODB_REGION)
+    kwargs = {"region_name": settings.DYNAMODB_REGION}
+    if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+        kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
+        kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
+    return boto3.client("dynamodb", **kwargs)
 
 
 def get_dynamodb_resource():
     """Returns high-level boto3 DynamoDB resource with appropriate endpoint."""
-    if settings.DYNAMODB_ENDPOINT_URL:
+    if settings.DYNAMODB_ENDPOINT_URL and settings.DYNAMODB_ENDPOINT_URL.strip():
         return boto3.resource(
             "dynamodb",
-            endpoint_url=settings.DYNAMODB_ENDPOINT_URL,
+            endpoint_url=settings.DYNAMODB_ENDPOINT_URL.strip(),
             region_name=settings.DYNAMODB_REGION,
             aws_access_key_id="local",
             aws_secret_access_key="local"
         )
-    return boto3.resource("dynamodb", region_name=settings.DYNAMODB_REGION)
+    kwargs = {"region_name": settings.DYNAMODB_REGION}
+    if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
+        kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
+        kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
+    return boto3.resource("dynamodb", **kwargs)
 
 
 def ensure_user_table():

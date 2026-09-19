@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./local_state.db")
     REDIS_URL: Optional[str] = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     CEDAR_POLICIES_PATH: str = "cedar/policies"
-    DYNAMODB_ENDPOINT_URL: Optional[str] = os.getenv("DYNAMODB_ENDPOINT_URL", "http://localhost:8001")
+    DYNAMODB_ENDPOINT_URL: Optional[str] = os.getenv("DYNAMODB_ENDPOINT_URL", None)
     DYNAMODB_TABLE_USERS: str = os.getenv("DYNAMODB_TABLE_USERS", "greenphoenix-users")
     DYNAMODB_TABLE_TRANSLATIONS: str = os.getenv("DYNAMODB_TABLE_TRANSLATIONS", "greenphoenix-translations")
     DYNAMODB_REGION: str = os.getenv("DYNAMODB_REGION", "us-east-1")
