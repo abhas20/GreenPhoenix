@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, CheckCircle2, XCircle, Calculator, Loader2 } from "lucide-react";
 import type { ProgramDocument, EligibilityCheckResponse } from "../../types/program";
 import { programService } from "../../services/programService";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface EligibilityTesterModalProps {
   program: ProgramDocument | null;
@@ -12,6 +13,7 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
   program,
   onClose,
 }) => {
+  const { t } = useLanguage();
   const [income, setIncome] = useState<number | "">(32000);
   const [householdSize, setHouseholdSize] = useState<number | "">(3);
   const [age, setAge] = useState<number | "">(35);
@@ -25,7 +27,19 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
   const [result, setResult] = useState<EligibilityCheckResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setResult(null);
+    setError(null);
+  }, [program?.program_id]);
+  
   if (!program) return null;
+
+
+  const handleClose = () => {
+    setResult(null);
+    setError(null);
+    onClose();
+  };
 
   const handleEvaluate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,14 +72,14 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
               <Calculator className="w-4 h-4" />
-              <span>Deterministic Rule Evaluator</span>
+              <span>{t("Deterministic Rule Evaluator")}</span>
             </div>
-            <h3 className="text-xl font-bold text-white mt-1">{program.name}</h3>
-            <p className="text-xs text-slate-400 mt-0.5">{program.organization}</p>
+            <h3 className="text-xl font-bold text-white mt-1">{t(program.name)}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">{t(program.organization)}</p>
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -78,7 +92,7 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Annual Household Income ($)
+                  {t("Annual Household Income ($)")}
                 </label>
                 <input
                   type="number"
@@ -92,7 +106,7 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Household Size
+                  {t("Household Size")}
                 </label>
                 <input
                   type="number"
@@ -109,7 +123,7 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Primary Age
+                  {t("Primary Age")}
                 </label>
                 <input
                   type="number"
@@ -123,25 +137,25 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Borough / Region
+                  {t("Borough / Region")}
                 </label>
                 <select
                   value={borough}
                   onChange={(e) => setBorough(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="brooklyn">Brooklyn</option>
-                  <option value="bronx">Bronx</option>
-                  <option value="manhattan">Manhattan</option>
-                  <option value="queens">Queens</option>
-                  <option value="staten_island">Staten Island</option>
-                  <option value="nyc">Other NYC</option>
+                  <option value="brooklyn">{t("Brooklyn")}</option>
+                  <option value="bronx">{t("Bronx")}</option>
+                  <option value="manhattan">{t("Manhattan")}</option>
+                  <option value="queens">{t("Queens")}</option>
+                  <option value="staten_island">{t("Staten Island")}</option>
+                  <option value="nyc">{t("Other NYC")}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Monthly Rent ($)
+                  {t("Monthly Rent ($)")}
                 </label>
                 <input
                   type="number"
@@ -162,7 +176,7 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
                   onChange={(e) => setHasDisability(e.target.checked)}
                   className="rounded text-emerald-500 focus:ring-0"
                 />
-                <span className="text-slate-300">Receives Disability (SSI/SSDI)</span>
+                <span className="text-slate-300">{t("Receives Disability (SSI/SSDI)")}</span>
               </label>
 
               <label className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
@@ -172,7 +186,7 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
                   onChange={(e) => setHasChildren(e.target.checked)}
                   className="rounded text-emerald-500 focus:ring-0"
                 />
-                <span className="text-slate-300">Has Children Under 5</span>
+                <span className="text-slate-300">{t("Has Children Under 5")}</span>
               </label>
 
               <label className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-slate-700">
@@ -182,7 +196,7 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
                   onChange={(e) => setIsHomeowner(e.target.checked)}
                   className="rounded text-emerald-500 focus:ring-0"
                 />
-                <span className="text-slate-300">Owns Home (Primary)</span>
+                <span className="text-slate-300">{t("Owns Home (Primary)")}</span>
               </label>
             </div>
 
@@ -193,11 +207,11 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Evaluating Rules...
+                  <Loader2 className="w-4 h-4 animate-spin" /> {t("Evaluating Rules...")}
                 </>
               ) : (
                 <>
-                  <Calculator className="w-4 h-4" /> Run Deterministic Eligibility Check
+                  <Calculator className="w-4 h-4" /> {t("Run Deterministic Eligibility Check")}
                 </>
               )}
             </button>
@@ -216,37 +230,37 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
                 {result.is_eligible ? (
                   <>
                     <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                    <span>Eligible under Deterministic Statutory Rules</span>
+                    <span>{t("Eligible under Deterministic Statutory Rules")}</span>
                   </>
                 ) : (
                   <>
                     <XCircle className="w-5 h-5 text-rose-400" />
-                    <span>Not Currently Eligible for this Benefit</span>
+                    <span>{t("Not Currently Eligible for this Benefit")}</span>
                   </>
                 )}
               </div>
 
-              {result.passed_criteria.length > 0 && (
+              {result.passed_criteria?.length > 0 && (
                 <div className="mt-3">
                   <div className="text-xs font-semibold text-emerald-400 mb-1">
-                    Criteria Satisfied:
+                    {t("Criteria Satisfied:")}
                   </div>
                   <ul className="list-disc list-inside space-y-0.5 text-xs text-slate-300">
                     {result.passed_criteria.map((c, i) => (
-                      <li key={i}>{c}</li>
+                      <li key={i}>{t(c)}</li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              {result.failing_criteria.length > 0 && (
+              {result.failing_criteria?.length > 0 && (
                 <div className="mt-3">
                   <div className="text-xs font-semibold text-rose-400 mb-1">
-                    Eligibility Blockers:
+                    {t("Eligibility Blockers:")}
                   </div>
                   <ul className="list-disc list-inside space-y-0.5 text-xs text-slate-300">
                     {result.failing_criteria.map((c, i) => (
-                      <li key={i}>{c}</li>
+                      <li key={i}>{t(c)}</li>
                     ))}
                   </ul>
                 </div>
@@ -256,7 +270,7 @@ export const EligibilityTesterModal: React.FC<EligibilityTesterModalProps> = ({
 
           {error && (
             <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-              {error}
+              {t(error)}
             </div>
           )}
         </div>

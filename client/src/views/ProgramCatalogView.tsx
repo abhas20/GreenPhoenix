@@ -19,10 +19,13 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const effectiveProgramId = searchParams.get("id") || initialProgramId;
-  const [query, setQuery] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [programs, setPrograms] = useState<ProgramDocument[]>(FALLBACK_PROGRAMS);
   const [loading, setLoading] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [initialLivePrograms, setInitialLivePrograms] =
+    useState<ProgramDocument[]>(FALLBACK_PROGRAMS);
+
 
   const [selectedForTest, setSelectedForTest] = useState<ProgramDocument | null>(null);
   const [selectedForDetail, setSelectedForDetail] = useState<ProgramDocument | null>(null);
@@ -34,6 +37,7 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
       .then((results) => {
         if (results && results.length > 0) {
           setPrograms(results);
+          setInitialLivePrograms(results);
         }
       })
       .catch(() => {
@@ -49,11 +53,18 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
     }
   }, [effectiveProgramId, programs]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSearch(searchTerm);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Search logic
   const handleSearch = async (searchTerm: string) => {
-    setQuery(searchTerm);
     if (!searchTerm.trim()) {
-      setPrograms(FALLBACK_PROGRAMS);
+      setPrograms(initialLivePrograms);
       return;
     }
 
@@ -112,8 +123,8 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            value={query}
-            onChange={(e) => handleSearch(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={t("Search aid by keyword (e.g. 'eviction rent grant', 'food groceries', 'disability freeze')...")}
             className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-inner"
           />

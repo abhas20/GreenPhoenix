@@ -8,40 +8,55 @@ from server.config import settings
 log = logging.getLogger("greenphoenix.translation_store")
 
 
-def get_dynamodb_client():
-    """Returns low-level boto3 DynamoDB client with appropriate endpoint."""
-    if settings.DYNAMODB_ENDPOINT_URL:
-        return boto3.client(
-            "dynamodb",
-            endpoint_url=settings.DYNAMODB_ENDPOINT_URL,
-            region_name=settings.DYNAMODB_REGION,
-            aws_access_key_id="local",
-            aws_secret_access_key="local",
-        )
-    return boto3.client(
-        "dynamodb",
-        region_name=settings.DYNAMODB_REGION,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+import os
+
+
+def _get_dynamodb_kwargs():
+    endpoint = (settings.DYNAMODB_ENDPOINT_URL or "").strip()
+    is_local = bool(
+        endpoint
+        and any(h in endpoint.lower() for h in ["localhost", "127.0.0.1", "dynamodb-local", "8001"])
     )
+
+    ak = (settings.AWS_ACCESS_KEY_ID or "").strip()
+    sk = (settings.AWS_SECRET_ACCESS_KEY or "").strip()
+    token = (getattr(settings, "AWS_SESSION_TOKEN", None) or os.getenv("AWS_SESSION_TOKEN", "")).strip()
+
+    if is_local and not (ak and not ak.startswith("local")):
+        return {
+            "endpoint_url": endpoint,
+            "region_name": settings.DYNAMODB_REGION,
+            "aws_access_key_id": "local",
+            "aws_secret_access_key": "local",
+        }
+
+    kwargs = {"region_name": settings.DYNAMODB_REGION}
+    if ak and sk:
+        kwargs["aws_access_key_id"] = ak
+        kwargs["aws_secret_access_key"] = sk
+        if token:
+            kwargs["aws_session_token"] = token
+        elif ak.startswith("AKIA"):
+            # Explicitly prevent botocore from attaching stale/invalid security tokens
+            # to permanent IAM user credentials
+            kwargs["aws_session_token"] = None
+
+    if endpoint and not is_local:
+        kwargs["endpoint_url"] = endpoint
+
+    return kwargs
+
+
+def get_dynamodb_client():
+    """Returns low-level boto3 DynamoDB client with appropriate endpoint and credentials."""
+    kwargs = _get_dynamodb_kwargs()
+    return boto3.client("dynamodb", **kwargs)
 
 
 def get_dynamodb_resource():
-    """Returns high-level boto3 DynamoDB resource with appropriate endpoint."""
-    if settings.DYNAMODB_ENDPOINT_URL:
-        return boto3.resource(
-            "dynamodb",
-            endpoint_url=settings.DYNAMODB_ENDPOINT_URL,
-            region_name=settings.DYNAMODB_REGION,
-            aws_access_key_id="local",
-            aws_secret_access_key="local",
-        )
-    return boto3.resource(
-        "dynamodb",
-        region_name=settings.DYNAMODB_REGION,
-        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-    )
+    """Returns high-level boto3 DynamoDB resource with appropriate endpoint and credentials."""
+    kwargs = _get_dynamodb_kwargs()
+    return boto3.resource("dynamodb", **kwargs)
 
 
 def ensure_translations_table():
@@ -71,7 +86,7 @@ def ensure_translations_table():
             )
     except Exception as e:
         log.warning(
-            f"[TranslationStore] Could not connect to DynamoDB at {settings.DYNAMODB_ENDPOINT_URL} ({e}); in-memory fallback active."
+            f"[TranslationStore] Could not connect to DynamoDB ({e}); in-memory fallback active."
         )
 
 

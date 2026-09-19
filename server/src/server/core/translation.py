@@ -31,13 +31,25 @@ SUPPORTED_LANGUAGES: Dict[str, str] = {
 }
 
 
+import os
+
+
 def _get_aws_translate_client():
     """Returns boto3 Amazon Translate client using configured credentials."""
     try:
         kwargs = {"region_name": settings.AWS_REGION}
-        if settings.AWS_ACCESS_KEY_ID and settings.AWS_SECRET_ACCESS_KEY:
-            kwargs["aws_access_key_id"] = settings.AWS_ACCESS_KEY_ID
-            kwargs["aws_secret_access_key"] = settings.AWS_SECRET_ACCESS_KEY
+        ak = (settings.AWS_ACCESS_KEY_ID or "").strip()
+        sk = (settings.AWS_SECRET_ACCESS_KEY or "").strip()
+        token = (getattr(settings, "AWS_SESSION_TOKEN", None) or os.getenv("AWS_SESSION_TOKEN", "")).strip()
+
+        if ak and sk:
+            kwargs["aws_access_key_id"] = ak
+            kwargs["aws_secret_access_key"] = sk
+            if token:
+                kwargs["aws_session_token"] = token
+            elif ak.startswith("AKIA"):
+                kwargs["aws_session_token"] = None
+
         return boto3.client("translate", **kwargs)
     except Exception as e:
         log.warning(f"[Translation] Failed to create boto3 Translate client: {e}")

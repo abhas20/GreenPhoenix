@@ -15,6 +15,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import type { Role } from "../types/auth";
 
 interface AuthViewProps {
@@ -23,6 +24,7 @@ interface AuthViewProps {
 
 export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => {
   const { login, register, user, role, switchPersona } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -67,7 +69,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
     setSuccessMsg(null);
 
     if (!loginEmail || !loginPassword) {
-      setErrorMsg("Please provide both email and password.");
+      setErrorMsg(t("Please provide both email and password."));
       return;
     }
 
@@ -77,14 +79,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
         email: loginEmail.trim().toLowerCase(),
         password: loginPassword,
       });
-      setSuccessMsg("Authentication successful! Redirecting to your authorized workspace...");
+      setSuccessMsg(t("Authentication successful! Redirecting to your authorized workspace..."));
       setTimeout(() => {
         // Find persona to get role
         navigate(determineDestination(role));
       }, 600);
     } catch (err: any) {
       setErrorMsg(
-        err?.message || "Invalid credentials or account does not exist. Please check and try again."
+        err?.message || t("Invalid credentials or account does not exist. Please check and try again.")
       );
     } finally {
       setIsSubmitting(false);
@@ -97,15 +99,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
     setSuccessMsg(null);
 
     if (!regName.trim()) {
-      setErrorMsg("Full name is required.");
+      setErrorMsg(t("Full name is required."));
       return;
     }
     if (!regEmail.trim()) {
-      setErrorMsg("Valid email is required.");
+      setErrorMsg(t("Valid email is required."));
       return;
     }
     if (regPassword.length < 8) {
-      setErrorMsg("Password must be at least 8 characters long.");
+      setErrorMsg(t("Password must be at least 8 characters long."));
       return;
     }
 
@@ -117,7 +119,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
         : null;
 
     if (regRole === "Caseworker" && !effectiveOrgId) {
-      setErrorMsg("Caseworker registration requires an organization ID (e.g. 'hra_nyc').");
+      setErrorMsg(t("Caseworker registration requires an organization ID (e.g. 'hra_nyc')."));
       return;
     }
 
@@ -131,7 +133,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
         org_id: effectiveOrgId,
       });
       setSuccessMsg(
-        `Staff account created for ${regName}! Role: ${regRole}. Redirecting to your workspace...`
+        `${t("Staff account created for")} ${regName}! ${t("Role:")} ${regRole}. ${t("Redirecting to your workspace...")}`
       );
       setTimeout(() => {
         navigate(determineDestination(regRole));
@@ -139,7 +141,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
     } catch (err: any) {
       setErrorMsg(
         err?.message ||
-          "Registration failed. Email might already exist or role parameters are invalid."
+          t("Registration failed. Email might already exist or role parameters are invalid.")
       );
     } finally {
       setIsSubmitting(false);
@@ -152,12 +154,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
     setErrorMsg(null);
     try {
       await switchPersona(personaKey);
-      setSuccessMsg(`Authenticated as demo persona! Moving to ${targetRoute}...`);
+      setSuccessMsg(`${t("Authenticated as demo persona! Moving to")} ${targetRoute}...`);
       setTimeout(() => {
         navigate(targetRoute);
       }, 400);
     } catch (err: any) {
-      setErrorMsg("Demo switch failed: " + err.message);
+      setErrorMsg(t("Demo switch failed: ") + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -172,7 +174,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-emerald-300 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Return to Public Home</span>
+          <span>{t("Return to Public Home")}</span>
         </Link>
       </div>
 
@@ -181,7 +183,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
         <div className="mb-8 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 shadow-lg shadow-amber-500/5">
           <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div className="text-xs text-amber-200">
-            <strong className="text-white block mb-0.5">Authorization Barrier Enforced:</strong>
+            <strong className="text-white block mb-0.5">{t("Authorization Barrier Enforced:")}</strong>
             {stateMessage}
           </div>
         </div>
@@ -198,30 +200,30 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
               </div>
               <div>
                 <h2 className="text-lg font-bold text-white tracking-tight">
-                  Staff Identity & Cedar RBAC Gate
+                  {t("Staff Identity & Cedar RBAC Gate")}
                 </h2>
-                <p className="text-xs text-slate-400">AWS Cedar Zero-Trust Authorization</p>
+                <p className="text-xs text-slate-400">{t("AWS Cedar Zero-Trust Authorization")}</p>
               </div>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              GreenPhoenix enforces strict policy-based boundaries via{" "}
-              <strong className="text-emerald-300">AWS Cedar</strong>. Public citizen applicants
-              browse anonymously with zero PII retention, while agency caseworkers, policy
-              analysts, and system administrators must hold verified credentials.
+              {t(
+                "GreenPhoenix enforces strict policy-based boundaries via AWS Cedar. Public citizen applicants browse anonymously with zero PII retention, while agency caseworkers, policy analysts, and system administrators must hold verified credentials."
+              )}
             </p>
 
             {/* 1-Click Evaluation Shortcuts that REDIRECT to real routes */}
             <div className="mt-6 pt-6 border-t border-slate-800">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> 1-Click Evaluation Sign-In
+                  <Sparkles className="w-3.5 h-3.5" /> {t("1-Click Evaluation Sign-In")}
                 </span>
-                <span className="text-[10px] text-slate-400">Instant Redirect</span>
+                <span className="text-[10px] text-slate-400">{t("Instant Redirect")}</span>
               </div>
               <p className="text-[11px] text-slate-400 mb-3">
-                Click any persona below to authenticate into the backend and jump directly to their
-                respective protected URL route:
+                {t(
+                  "Click any persona below to authenticate into the backend and jump directly to their respective protected URL route:"
+                )}
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -235,7 +237,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                     <span className="font-bold text-blue-300 group-hover:text-blue-200">Sarah Jenkins</span>
                     <span className="text-[10px] font-mono text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">/caseworker</span>
                   </div>
-                  <div className="text-[10px] text-slate-400 mt-1">NYC HRA Caseworker (hra_nyc)</div>
+                  <div className="text-[10px] text-slate-400 mt-1">{t("NYC HRA Caseworker (hra_nyc)")}</div>
                 </button>
 
                 <button
@@ -248,7 +250,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                     <span className="font-bold text-cyan-300 group-hover:text-cyan-200">Carlos Rivera</span>
                     <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">/caseworker</span>
                   </div>
-                  <div className="text-[10px] text-slate-400 mt-1">Queens CBO Caseworker (queens_cbo)</div>
+                  <div className="text-[10px] text-slate-400 mt-1">{t("Queens CBO Caseworker (queens_cbo)")}</div>
                 </button>
 
                 <button
@@ -261,7 +263,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                     <span className="font-bold text-purple-300 group-hover:text-purple-200">Dr. Maya Patel</span>
                     <span className="text-[10px] font-mono text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">/analyst</span>
                   </div>
-                  <div className="text-[10px] text-slate-400 mt-1">Civil Rights & Policy Analyst</div>
+                  <div className="text-[10px] text-slate-400 mt-1">{t("Civil Rights & Policy Analyst")}</div>
                 </button>
 
                 <button
@@ -274,7 +276,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                     <span className="font-bold text-amber-300 group-hover:text-amber-200">Dev Ops Admin</span>
                     <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">/admin</span>
                   </div>
-                  <div className="text-[10px] text-slate-400 mt-1">System Administrator</div>
+                  <div className="text-[10px] text-slate-400 mt-1">{t("System Administrator")}</div>
                 </button>
               </div>
             </div>
@@ -299,7 +301,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                Staff Sign In
+                {t("Staff Sign In")}
               </button>
               <button
                 type="button"
@@ -314,7 +316,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                     : "text-slate-400 hover:text-white"
                 }`}
               >
-                Register Staff Identity
+                {t("Register Staff Identity")}
               </button>
             </div>
 
@@ -324,9 +326,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                   <div className="text-xs">
-                    <span className="text-slate-300">Signed in as: </span>
+                    <span className="text-slate-300">{t("Signed in as:")} </span>
                     <strong className="text-white">{user.name}</strong>{" "}
-                    <span className="text-emerald-400">({user.role})</span>
+                    <span className="text-emerald-400">({t(user.role)})</span>
                     {user.org_id && (
                       <span className="text-slate-400 ml-1">[{user.org_id}]</span>
                     )}
@@ -337,7 +339,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                   onClick={() => navigate(determineDestination(role))}
                   className="px-3.5 py-1.5 text-xs font-bold bg-emerald-500 text-slate-950 rounded-xl hover:bg-emerald-400 transition-colors cursor-pointer"
                 >
-                  Go to Workspace
+                  {t("Go to Workspace")}
                 </button>
               </div>
             )}
@@ -347,7 +349,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
               <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
                 <div className="text-xs text-rose-200">
-                  <strong>Authentication Failed:</strong> {errorMsg}
+                  <strong>{t("Authentication Failed:")}</strong> {errorMsg}
                 </div>
               </div>
             )}
@@ -364,7 +366,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Staff Email Address
+                    {t("Staff Email Address")}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -383,7 +385,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Password
+                    {t("Password")}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -406,7 +408,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                   className="w-full mt-4 py-3 px-4 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                 >
                   <KeyRound className="w-4 h-4" />
-                  <span>{isSubmitting ? "Authenticating..." : "Sign In to Staff Desk"}</span>
+                  <span>{isSubmitting ? t("Authenticating...") : t("Sign In to Staff Desk")}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
@@ -415,7 +417,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Full Name & Title
+                      {t("Full Name & Title")}
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -434,7 +436,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Official Agency Email
+                      {t("Official Agency Email")}
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -454,7 +456,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Password (Min. 8 characters)
+                    {t("Password (Min. 8 characters)")}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -475,7 +477,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                 {/* Role selection */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Select Staff Role (Cedar Policy Principal)
+                    {t("Select Staff Role (Cedar Policy Principal)")}
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {(["Caseworker", "Analyst", "Admin"] as Role[]).map((r) => (
@@ -489,7 +491,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                             : "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
                         }`}
                       >
-                        {r}
+                        {t(r)}
                       </button>
                     ))}
                   </div>
@@ -500,11 +502,12 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                   <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 space-y-3">
                     <div className="flex items-center gap-2 text-xs font-semibold text-blue-300">
                       <Building2 className="w-4 h-4" />
-                      <span>Organization Scope (Mandatory for Caseworkers)</span>
+                      <span>{t("Organization Scope (Mandatory for Caseworkers)")}</span>
                     </div>
                     <p className="text-[11px] text-slate-400 leading-normal">
-                      Under Cedar Policy #2, Caseworkers can only view and process cases belonging
-                      to their assigned organization.
+                      {t(
+                        "Under Cedar Policy #2, Caseworkers can only view and process cases belonging to their assigned organization."
+                      )}
                     </p>
 
                     <div className="grid grid-cols-3 gap-2 pt-1">
@@ -518,7 +521,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                         }`}
                       >
                         <div className="font-bold">hra_nyc</div>
-                        <div className="text-[10px] text-slate-400">NYC HRA Agency</div>
+                        <div className="text-[10px] text-slate-400">{t("NYC HRA Agency")}</div>
                       </button>
 
                       <button
@@ -531,7 +534,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                         }`}
                       >
                         <div className="font-bold">queens_cbo</div>
-                        <div className="text-[10px] text-slate-400">Queens Non-Profit</div>
+                        <div className="text-[10px] text-slate-400">{t("Queens Non-Profit")}</div>
                       </button>
 
                       <button
@@ -543,15 +546,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                             : "bg-slate-950 border-slate-800 text-slate-400 hover:text-white"
                         }`}
                       >
-                        <div className="font-bold">Custom Org</div>
-                        <div className="text-[10px] text-slate-400">Specify ID</div>
+                        <div className="font-bold">{t("Custom Org")}</div>
+                        <div className="text-[10px] text-slate-400">{t("Specify ID")}</div>
                       </button>
                     </div>
 
                     {regOrgId === "custom" && (
                       <input
                         type="text"
-                        placeholder="Enter organization slug (e.g. bronx_aid_net)"
+                        placeholder={t("Enter organization slug (e.g. bronx_aid_net)")}
                         value={customOrg}
                         onChange={(e) => setCustomOrg(e.target.value)}
                         className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-400 text-xs focus:outline-none focus:border-blue-500"
@@ -567,7 +570,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ initialMode = "login" }) => 
                 >
                   <ShieldCheck className="w-4 h-4" />
                   <span>
-                    {isSubmitting ? "Registering Identity..." : "Create Staff Account"}
+                    {isSubmitting ? t("Registering Identity...") : t("Create Staff Account")}
                   </span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
