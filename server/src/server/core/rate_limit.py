@@ -184,3 +184,22 @@ async def check_chat_rate_limit(
             detail=f"Rate limit exceeded for session. Maximum {session_limit} requests per minute.",
             headers={"Retry-After": str(retry_after_sess)}
         )
+
+
+async def check_translate_rate_limit(request: Request):
+    """
+    Rate limiter for public UI translation endpoint.
+    Enforces 30 batch requests/minute per client IP to protect AWS Translate and Gemini quotas.
+    """
+    client_ip = get_client_ip(request)
+    ip_key = f"ratelimit:translate:ip:{client_ip}"
+    limit = 30
+    allowed, retry_after = _evaluate_sliding_limit(ip_key, limit, 60)
+    if not allowed:
+        log.warning(f"[RateLimit] Translation rate limit exceeded for IP '{client_ip}' ({limit}/min)")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Translation rate limit exceeded. Maximum {limit} requests per minute.",
+            headers={"Retry-After": str(retry_after)}
+        )
+

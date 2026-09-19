@@ -72,23 +72,41 @@ def test_matching_confidence_tiers():
 def test_multi_turn_feedback_loop():
     print("\n--- Test 3: Multi-Turn Orchestration Clarification Loop ---")
     session_id = "test_loop_verify_001"
-    orchestrator.reset_session(session_id)
+    orchestrator.store.reset(session_id)
 
     # Turn 1: Incomplete profile -> Clarification required
-    resp1 = orchestrator.process_user_turn("I need help with rent", session_id=session_id)
+    resp1 = orchestrator.process_user_turn(
+        "I need help with rent", 
+        session_id=session_id,
+        principal_id=session_id,
+        principal_role="PublicApplicant",
+        org_id=None
+    )
     print(f"Turn 1 -> clarification_needed: {resp1.clarification_needed}")
     print(f"Turn 1 Reply: {resp1.reply_message}")
     assert resp1.clarification_needed is True, "Turn 1 must request clarification for borough/income"
 
     # Turn 2: Borough & income provided -> Candidate matching finds unverified programs (needs disability/age)
-    resp2 = orchestrator.process_user_turn("I live in Brooklyn and my annual income is 24000", session_id=session_id)
+    resp2 = orchestrator.process_user_turn(
+        "I live in Brooklyn and my annual income is 24000", 
+        session_id=session_id,
+        principal_id=session_id,
+        principal_role="PublicApplicant",
+        org_id=None
+    )
     print(f"\nTurn 2 -> clarification_needed: {resp2.clarification_needed}")
     print(f"Turn 2 Reply: {resp2.reply_message}")
     # Either unverified clarification or match status
     assert "Brooklyn" in (resp2.applicant_profile.borough or "").title(), "Borough should be Brooklyn"
 
     # Turn 3: Disability and rent provided -> DRIE confirmed, clarification loop exits!
-    resp3 = orchestrator.process_user_turn("I have SSI disability benefits and my rent is 1400", session_id=session_id)
+    resp3 = orchestrator.process_user_turn(
+        "I have SSI disability benefits and my rent is 1400", 
+        session_id=session_id,
+        principal_id=session_id,
+        principal_role="PublicApplicant",
+        org_id=None
+    )
     print(f"\nTurn 3 -> clarification_needed: {resp3.clarification_needed}")
     print(f"Turn 3 Reply: {resp3.reply_message}")
     assert resp3.clarification_needed is False, "Turn 3 must exit clarification loop (clarification_needed=False)"
@@ -97,7 +115,13 @@ def test_multi_turn_feedback_loop():
     print(f"Turn 3 Document Checklist: {[d.document_name for d in resp3.application_draft.consolidated_checklist]}")
 
     # Turn 4: User asks a question -> Informational response without looping
-    resp4 = orchestrator.process_user_turn("What documents do I need for this?", session_id=session_id)
+    resp4 = orchestrator.process_user_turn(
+        "What documents do I need for this?", 
+        session_id=session_id,
+        principal_id=session_id,
+        principal_role="PublicApplicant",
+        org_id=None
+    )
     print(f"\nTurn 4 -> clarification_needed: {resp4.clarification_needed}")
     print(f"Turn 4 Reply: {resp4.reply_message[:150]}...")
     assert resp4.clarification_needed is False, "Turn 4 question should not trigger clarification loop"
@@ -106,19 +130,37 @@ def test_multi_turn_feedback_loop():
 def test_loop_bound_safeguard():
     print("\n--- Test 4: Clarification Loop Upper-Bound (MAX_CLARIFICATION_ATTEMPTS) ---")
     session_id = "test_loop_bound_002"
-    orchestrator.reset_session(session_id)
+    orchestrator.store.reset(session_id)
 
     # Turn 1: Clarification attempt 1
-    resp1 = orchestrator.process_user_turn("hello I need some money", session_id=session_id)
+    resp1 = orchestrator.process_user_turn(
+        "hello I need some money", 
+        session_id=session_id,
+        principal_id=session_id,
+        principal_role="PublicApplicant",
+        org_id=None
+    )
     assert resp1.clarification_needed is True
     print(f"Turn 1 clarification_needed: {resp1.clarification_needed}")
 
     # Turn 2: Clarification attempt 2
-    resp2 = orchestrator.process_user_turn("I don't know my borough or income", session_id=session_id)
+    resp2 = orchestrator.process_user_turn(
+        "I don't know my borough or income", 
+        session_id=session_id,
+        principal_id=session_id,
+        principal_role="PublicApplicant",
+        org_id=None
+    )
     print(f"Turn 2 clarification_needed: {resp2.clarification_needed}")
 
     # Turn 3: Exceeded MAX_CLARIFICATION_ATTEMPTS -> Must NOT loop infinitely, must exit!
-    resp3 = orchestrator.process_user_turn("still not sure", session_id=session_id)
+    resp3 = orchestrator.process_user_turn(
+        "still not sure", 
+        session_id=session_id,
+        principal_id=session_id,
+        principal_role="PublicApplicant",
+        org_id=None
+    )
     print(f"Turn 3 clarification_needed: {resp3.clarification_needed}")
     print(f"Turn 3 Reply: {resp3.reply_message[:150]}...")
     assert resp3.clarification_needed is False, "Loop must terminate after MAX_CLARIFICATION_ATTEMPTS"

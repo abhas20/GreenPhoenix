@@ -4,6 +4,7 @@ from server.api.routes_caseworker import router as caseworker_router
 from server.api.routes_audit import router as audit_router
 from server.api.routes_admin import router as admin_router
 from server.api.routes_auth import router as auth_router
+from server.api.routes_translate import router as translate_router
 
 __all__ = [
     "chat_router",
@@ -11,5 +12,6 @@ __all__ = [
     "caseworker_router",
     "audit_router",
     "admin_router",
-    "auth_router"
+    "auth_router",
+    "translate_router"
 ]

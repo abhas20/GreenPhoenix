@@ -540,6 +540,49 @@ def test_auth_registration_and_login():
     print("✔ Newly registered Analyst blocked from /caseworker/cases: DENY (403 via Cedar)")
 
 
+def test_multilingual_chat_pipeline():
+    print("\n--- 10. Testing Multilingual Pipeline (Indian & Global Languages) ---")
+    from unittest.mock import patch
+    from server.agents.orchestrator import NavigatorResponse
+
+    dummy_res = NavigatorResponse(
+        session_id="ml_test_sess",
+        reply_message="You qualify for emergency food assistance in Brooklyn.",
+        clarification_needed=False,
+        applicant_profile=ApplicantProfile(borough="brooklyn", primary_needs=["food"])
+    )
+
+    with patch.object(orchestrator, "process_user_turn", return_value=dummy_res):
+        # 1. Standard English turn
+        res_en = client.post("/api/v1/chat/turn", json={"message": "Need food help in Brooklyn", "language": "en"})
+        assert res_en.status_code == 200, f"Expected 200, got {res_en.status_code}"
+        data_en = res_en.json()
+        assert data_en["detected_language"] == "en"
+        assert "food assistance" in data_en["reply_message"]
+        print("✔ English ChatTurn: PASSED (passthrough, 0 translation overhead)")
+
+        # 2. Multilingual Hindi turn
+        with patch("server.api.routes_chat.translation_service.translate_to_english", return_value=("Need food help in Brooklyn", "hi")):
+            with patch("server.api.routes_chat.translation_service.translate_from_english", return_value="आपको ब्रुकलिन में आपातकालीन खाद्य सहायता के लिए पात्रता है।"):
+                res_hi = client.post("/api/v1/chat/turn", json={"message": "मुझे ब्रुकलिन में भोजन सहायता चाहिए", "language": "hi"})
+                assert res_hi.status_code == 200
+                data_hi = res_hi.json()
+                assert data_hi["detected_language"] == "hi"
+                assert data_hi["original_english_reply"] == "You qualify for emergency food assistance in Brooklyn."
+                assert "ब्रुकलिन" in data_hi["reply_message"]
+                print("✔ Hindi ChatTurn: PASSED (inbound translation -> orchestrator -> outbound translation)")
+
+        # 3. Multilingual Spanish turn
+        with patch("server.api.routes_chat.translation_service.translate_to_english", return_value=("Need food help in Brooklyn", "es")):
+            with patch("server.api.routes_chat.translation_service.translate_from_english", return_value="Usted califica para asistencia alimentaria de emergencia en Brooklyn."):
+                res_es = client.post("/api/v1/chat/turn", json={"message": "Necesito ayuda con comida en Brooklyn", "language": "es"})
+                assert res_es.status_code == 200
+                data_es = res_es.json()
+                assert data_es["detected_language"] == "es"
+                assert "asistencia alimentaria" in data_es["reply_message"]
+                print("✔ Spanish ChatTurn: PASSED (global language support verified)")
+
+
 if __name__ == "__main__":
     test_health_check()
     test_session_cookie_middleware_and_ownership_isolation()
@@ -550,6 +593,7 @@ if __name__ == "__main__":
     test_audit_endpoints_and_cedar_guard()
     test_sliding_window_rate_limiting_and_cookie_dropping_defense()
     test_auth_registration_and_login()
+    test_multilingual_chat_pipeline()
     print("\n===================================================================")
-    print("🎉 ALL 9 FASTAPI ROUTE, AUTH, SECURITY, & RATE-LIMIT TESTS PASSED! 🎉")
+    print("🎉 ALL 10 FASTAPI ROUTE, MULTILINGUAL, & SECURITY TESTS PASSED! 🎉")
     print("===================================================================\n")

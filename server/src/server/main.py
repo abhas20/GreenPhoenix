@@ -15,7 +15,8 @@ from server.api import (
     caseworker_router,
     audit_router,
     admin_router,
-    auth_router
+    auth_router,
+    translate_router
 )
 
 # Configure structured logging
@@ -122,6 +123,7 @@ app.include_router(programs_router, prefix="/api/v1")
 app.include_router(caseworker_router, prefix="/api/v1")
 app.include_router(audit_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(translate_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["System"])

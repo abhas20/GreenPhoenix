@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "gemini-embedding-001"
     EMBEDDING_DIMENSION: int = 768
     
+    # AWS Credentials & Translation
+    AWS_ACCESS_KEY_ID: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID", None)
+    AWS_SECRET_ACCESS_KEY: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY", None)
+    AWS_REGION: str = os.getenv("AWS_REGION", os.getenv("AWS_DEFAULT_REGION", "us-east-1"))
+    TRANSLATE_PROVIDER: str = os.getenv("TRANSLATE_PROVIDER", "aws")
+    
     # Storage & Cedar
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./local_state.db")
     REDIS_URL: Optional[str] = os.getenv("REDIS_URL", "redis://localhost:6379/0")
