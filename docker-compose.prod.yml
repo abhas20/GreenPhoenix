@@ -20,6 +20,8 @@ services:
       - "443:443"
     environment:
       - BACKEND_URL=http://backend:8000
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       backend:
         condition: service_healthy
