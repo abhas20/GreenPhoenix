@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from strands import Agent, tool
 
 from server.config import settings
-from server.core.llm import get_model
+from server.core.llm import get_model, get_fast_retry_strategy
 from server.core.presidio_sanitizer import sanitizer
 from server.agents.intake_agent import create_intake_agent, extract_profile, ApplicantProfile
 from server.agents.matching_agent import create_matching_agent, match_programs, MatchingResult
@@ -17,7 +17,6 @@ log = logging.getLogger(__name__)
 
 
 # Redis based session store with in-memory fallback for local dev.
-# Session state is not persisted long-term -- it is only used to maintain context across turns in a single conversation.
 class SessionState(BaseModel):
     session_id: str
     applicant_profile: ApplicantProfile = Field(default_factory=lambda: ApplicantProfile(summary="New applicant"))
@@ -29,26 +28,22 @@ class SessionState(BaseModel):
     clarification_attempts: int = 0
 
 
-
 class SessionStore:
     def __init__(self, ttl_seconds: int = 60 * 60 * 24):
         self.ttl_seconds = ttl_seconds
         self._redis = None
         self._memory_fallback: Dict[str, SessionState] = {}
         try:
-            import redis  # lazy import
+            import redis
             redis_url = getattr(settings, "REDIS_URL", None)
             if redis_url:
                 self._redis = redis.from_url(redis_url, decode_responses=True)
                 self._redis.ping()
                 log.info(f"[SessionStore] Connected to Redis at {redis_url}")
             else:
-                log.warning("REDIS_URL not configured -- falling back to in-memory session store. "
-                            "This will lose all sessions on restart and will not work correctly "
-                            "with more than one process/container/Lambda instance.")
+                log.warning("REDIS_URL not configured -- falling back to in-memory session store.")
         except Exception as e:
-            log.warning(f"Could not connect to Redis ({e}) -- falling back to in-memory session store. "
-                        "Fine for local dev, NOT safe for Lambda or multi-instance deployment.")
+            log.warning(f"Could not connect to Redis ({e}) -- falling back to in-memory session store.")
             self._redis = None
 
     def _key(self, session_id: str) -> str:
@@ -93,12 +88,12 @@ class NavigatorResponse(BaseModel):
 
 
 NAVIGATOR_SYSTEM_PROMPT = """
-You are the Lead Community Aid Navigator, a compassionate advocate helping NYC residents navigate public benefits.
+You are the Lead Community Aid Navigator, an empathetic, multilingual advocate helping individuals and families navigate public assistance, social safety net programs, and emergency benefits worldwide (including India, the United States, the UK, Canada, and global aid frameworks).
 
 Your role:
-1. Warmly answer questions about eligibility, program details, or application processes.
-2. Ground your explanations in official rules using your tools.
-3. Be reassuring, non-judgmental, and practical.
+1. Warmly answer questions about eligibility, program details, or application processes across national and state programs.
+2. Ground your explanations in official statutory rules using your tools.
+3. Be reassuring, non-judgmental, practical, and culturally empathetic.
 4. If eligibility is unverifiable, NEVER state it as confirmed or excluded -- state exactly what info is missing.
 
 Applicant Context (from current session state):
@@ -131,18 +126,14 @@ def _merge_profiles(base: ApplicantProfile, update: ApplicantProfile) -> Applica
             data[k] = v
 
     missing = []
-    
-    # Trust the Intake Agent if it explicitly flagged fields as missing
-    llm_flagged_missing = update.missing_critical_fields or []
-    
-    if "income" in llm_flagged_missing or "annual_income" in llm_flagged_missing:
+
+    # Check income: known if not None (including 0.0)
+    if data.get("annual_income") is None:
         missing.append("income")
-    elif data.get("annual_income") is None:
-        missing.append("income")
-        
-    if "borough" in llm_flagged_missing:
-        missing.append("borough")
-    elif not data.get("borough"):  
+
+    # Check location: known if borough, city_district, state_province, or country is provided
+    has_location = bool(data.get("borough") or data.get("city_district") or data.get("state_province") or data.get("country"))
+    if not has_location:
         missing.append("borough")
 
     data["missing_critical_fields"] = missing
@@ -152,17 +143,19 @@ def _merge_profiles(base: ApplicantProfile, update: ApplicantProfile) -> Applica
     elif update.clarification_question:
         data["clarification_question"] = update.clarification_question
     else:
-        data["clarification_question"] = "Could you please share your borough and approximate annual household income so we can find exact matching aid?"
+        data["clarification_question"] = "Could you please share your country and city/borough, along with your approximate annual household income so we can find exact matching aid?"
 
     if update.summary and update.summary not in ("New applicant", "Unknown", ""):
         data["summary"] = update.summary
 
     return ApplicantProfile(**data)
 
+
 _MATCH_RELEVANT_FIELDS = (
     "annual_income", "borough", "monthly_rent", "household_size",
     "age", "has_disability_benefits", "disability_benefit_types",
     "has_children_under_5", "is_homeowner",
+    "country", "state_province", "city_district", "currency",
 )
 
 
@@ -187,7 +180,9 @@ def _make_session_scoped_tools(principal_id: str, principal_role: str, org_id: O
 
     return [_search, _check_eligibility, _get_requirements]
 
+
 MAX_CLARIFICATION_ATTEMPTS = 2
+
 
 class CommunityAidOrchestrator:
     def __init__(self, session_store: Optional[SessionStore] = None):
@@ -197,7 +192,7 @@ class CommunityAidOrchestrator:
         session = self.store.get(session_id)
         sanitized_text, turn_vault = sanitizer.sanitize(user_message)
         session.pii_vault.update(turn_vault)
-        
+
         # 1. Intake Phase (Safe Execution)
         try:
             intake_agent = create_intake_agent()
@@ -205,15 +200,15 @@ class CommunityAidOrchestrator:
             session.applicant_profile = _merge_profiles(session.applicant_profile, new_profile)
         except Exception as e:
             log.error(f"[Orchestrator] Intake failed: {e}")
-            
+
         profile = session.applicant_profile
         is_question = _is_question_or_inquiry(sanitized_text)
 
-        # 2. Clarification Loop
-        if profile.missing_critical_fields and not session.matching_result:
+        # 2. Clarification Loop: do NOT intercept questions!
+        if profile.missing_critical_fields and not session.matching_result and not is_question:
             if session.clarification_attempts < MAX_CLARIFICATION_ATTEMPTS:
                 session.clarification_attempts += 1
-                reply = profile.clarification_question or "Could you share your borough and approximate income to help find exact matches?"
+                reply = profile.clarification_question or "Could you share your country, city or borough, and approximate income to help find exact matches?"
                 return self._finish_turn(session, user_message, reply, True, sanitized_text)
 
         # 3. Matching & Drafting Phase
@@ -222,7 +217,7 @@ class CommunityAidOrchestrator:
             try:
                 session.matching_result = match_programs(profile, agent=create_matching_agent())
                 session.last_matched_snapshot = current_snapshot
-                
+
                 confirmed = [m for m in session.matching_result.ranked_programs if m.is_deterministically_eligible is True]
                 unverified = [m for m in session.matching_result.ranked_programs if m.is_deterministically_eligible is None]
 
@@ -254,7 +249,6 @@ class CommunityAidOrchestrator:
             return self._deterministic_question_reply(sanitized_text, session)
 
         try:
-            # Inject lightweight context string instead of the massive Pydantic dump
             state_context = f"Matched: {len(session.matching_result.ranked_programs) if session.matching_result else 0} programs. "
             if session.application_draft:
                 state_context += f"Drafted checklist for {len(session.application_draft.selected_programs)} programs."
@@ -264,10 +258,9 @@ class CommunityAidOrchestrator:
                 system_prompt=NAVIGATOR_SYSTEM_PROMPT.format(state_context=state_context),
                 tools=_make_session_scoped_tools(principal_id, principal_role, org_id),
                 model=model,
-                # messages=session.history
+                retry_strategy=get_fast_retry_strategy(max_attempts=2),
             )
 
-            # Pass the conversation history natively via Strands SDK
             agent_res = navigator_agent(
                 sanitized_text,
                 messages=session.history
@@ -279,7 +272,7 @@ class CommunityAidOrchestrator:
 
     def _summarize_match_status(self, session: SessionState) -> str:
         if not session.matching_result:
-            return "I'm here to help. Could you tell me a little more about your current housing or financial situation?"
+            return "I'm here to help. Could you tell me a little more about your current housing, health, or financial situation?"
 
         confirmed = [m for m in session.matching_result.ranked_programs if m.is_deterministically_eligible is True]
         unverified = [m for m in session.matching_result.ranked_programs if m.is_deterministically_eligible is None]
@@ -313,7 +306,18 @@ class CommunityAidOrchestrator:
         replies = []
         if session.matching_result:
             for p in session.matching_result.ranked_programs:
-                if p.program_id.lower() in q_lower or p.name.lower() in q_lower or ("scrie" in q_lower and "scrie" in p.program_id) or ("drie" in q_lower and "drie" in p.program_id):
+                if (
+                    p.program_id.lower() in q_lower
+                    or p.name.lower() in q_lower
+                    or ("scrie" in q_lower and "scrie" in p.program_id)
+                    or ("drie" in q_lower and "drie" in p.program_id)
+                    or ("pmjay" in q_lower and "pmjay" in p.program_id)
+                    or ("ayushman" in q_lower and "pmjay" in p.program_id)
+                    or ("kisan" in q_lower and "pmkisan" in p.program_id)
+                    or ("awas" in q_lower and "pmay" in p.program_id)
+                    or ("ration" in q_lower and "pds" in p.program_id)
+                    or ("mgnrega" in q_lower and "mgnrega" in p.program_id)
+                ):
                     if p.is_deterministically_eligible is None:
                         needed = "; ".join(p.unverifiable_checks or p.potential_blockers or ["additional details"])
                         replies.append(
@@ -342,9 +346,8 @@ class CommunityAidOrchestrator:
     ) -> NavigatorResponse:
         rehydrated_reply = sanitizer.rehydrate(reply, session.pii_vault)
 
-        # Store the SANITIZED text in history
         session.history.append({"role": "user", "content": sanitized_text or raw_user_message})
-        session.history.append({"role": "assistant", "content": reply})  # store pre-rehydration; rehydrate on read if needed
+        session.history.append({"role": "assistant", "content": reply})
 
         self.store.save(session)
 
@@ -354,13 +357,13 @@ class CommunityAidOrchestrator:
             clarification_needed=clarification_needed,
             applicant_profile=session.applicant_profile,
             matching_result=session.matching_result,
-            application_draft=session.application_draft,
+            application_draft=session.application_draft
         )
 
 
-# Module-level instance
 orchestrator = CommunityAidOrchestrator()
 
 
 def _get_redis_client():
+    """Returns the Redis client from the orchestrator's session store, if connected."""
     return orchestrator.store._redis

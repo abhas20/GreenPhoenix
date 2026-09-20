@@ -2,7 +2,11 @@ import type { MatchingResult, ApplicationDraft } from "./program";
 
 export interface ApplicantProfile {
   preferred_language?: string;
+  country?: string | null;
+  state_province?: string | null;
+  city_district?: string | null;
   borough?: string | null;
+  currency?: string | null;
   household_size?: number | null;
   annual_income?: number | null;
   monthly_rent?: number | null;

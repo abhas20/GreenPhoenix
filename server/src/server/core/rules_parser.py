@@ -32,8 +32,19 @@ def _parse_float(value: Optional[str]) -> Optional[float]:
     if not v:
         return None
     try:
-        return float(v.replace(",", "").replace("$", ""))
-    except ValueError:
+        clean = v.replace(",", "").replace("$", "").replace("₹", "").replace("£", "").replace("€", "")
+        clean_lower = clean.lower()
+        if "lakh" in clean_lower or "lac" in clean_lower:
+            num = re.search(r"([0-9.]+)", clean_lower)
+            if num:
+                return float(num.group(1)) * 100000.0
+        elif "k" in clean_lower:
+            num = re.search(r"([0-9.]+)", clean_lower)
+            if num:
+                return float(num.group(1)) * 1000.0
+        num = re.search(r"([0-9.]+)", clean)
+        return float(num.group(1)) if num else None
+    except (ValueError, AttributeError):
         return None
 
 
@@ -46,17 +57,27 @@ def _parse_list(value: Optional[str]) -> List[str]:
 def _infer_income_caps(text: str) -> Tuple[Optional[float], Optional[float]]:
     """
     Infers (single_cap, family_max_cap) from income text when explicit column is missing.
-    Returns (None, None) if 'no income requirement' or no dollar figures are found.
+    Supports $, ₹, £, €, and words like Lakh.
     """
-    if "no income requirement" in text:
+    text_lower = text.lower()
+    if "no income requirement" in text_lower or "no upper income limit" in text_lower:
         return None, None
-    matches = re.findall(r"\$([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{4,})", text)
+
+    # Check for Lakhs (e.g. ₹2.5 lakh, 3 lakh, 6,00,000)
+    lakh_matches = re.findall(r"(?:₹|rs\.?|inr)?\s*([0-9.]+)\s*(?:lakh|lac)s?", text_lower)
+    if lakh_matches:
+        lakh_nums = sorted(list(set(float(m) * 100000.0 for m in lakh_matches)))
+        return lakh_nums[0], lakh_nums[-1]
+
+    # Standard currency amounts ($, ₹, £, €, or raw numbers with commas)
+    matches = re.findall(r"(?:[\$₹£€]|rs\.?|inr)?\s*([0-9]{1,3}(?:,[0-9]{2,3})+|[0-9]{4,})", text_lower)
     if not matches:
         return None, None
     nums = sorted(list(set(float(m.replace(",", "")) for m in matches)))
+    if not nums:
+        return None, None
     if len(nums) == 1:
         return nums[0], nums[0]
-    # For tiered brackets (e.g. single $19,104 vs family $68,675)
     return nums[0], nums[-1]
 
 
