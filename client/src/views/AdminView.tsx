@@ -186,7 +186,7 @@ export const AdminView: React.FC = () => {
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>Target Index: aid-programs (KNN HNSW)</span>
             </div>
-            <div>Source: 55 Official NYC & NY State Benefit Programs</div>
+            <div>Source: Global, National & Regional Benefit Programs (India, US, UK, Canada)</div>
           </div>
 
           <button

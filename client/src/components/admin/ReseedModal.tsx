@@ -110,7 +110,7 @@ export const ReseedModal: React.FC<ReseedModalProps> = ({
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 space-y-1 text-[11px]">
                 <div className="flex items-center gap-2 text-slate-300 font-semibold">
                   <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                  <span>Target Dataset: 55 NYC & NY State Benefit Programs</span>
+                  <span>Target Dataset: Global, National & Regional Benefit Programs (India, US, UK, Canada)</span>
                 </div>
                 <p>Vector algorithm: HNSW (Hierarchical Navigable Small World) with cosine similarity.</p>
               </div>

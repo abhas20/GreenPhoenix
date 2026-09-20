@@ -5,7 +5,7 @@ import type { SessionHistoryItem } from "../../types/chat";
 import { useLanguage } from "../../context/LanguageContext";
 
 const WELCOME_PART_1 =
-  "Hello. I am your confidential Community Aid Navigator. I am here to help you find and apply for emergency housing, food, cash, and utility assistance in New York City.";
+  "Hello. I am your confidential Community Aid Navigator. I am here to help you find and apply for emergency healthcare, food, housing, cash, and utility assistance across global, national, and regional aid programs (including India, the United States, UK, and Canada).";
 const WELCOME_PART_2 =
   "Please describe your situation in your own words—whether you are behind on rent, lost income, or need help paying for groceries. All personal identifiers (names, phone numbers, addresses) are automatically encrypted before processing.";
 

@@ -8,45 +8,45 @@ interface ProgramTickerProps {
 
 const TOP_PROGRAMS = [
   {
-    id: "nyc-snap-001",
-    name: "NYC SNAP (Food Stamps)",
-    badge: "Food & Nutrition",
-    highlight: "Up to $973/mo for households",
+    id: "in-pmjay-001",
+    name: "Ayushman Bharat (PM-JAY)",
+    badge: "Healthcare / Hospitalization",
+    highlight: "Cashless coverage up to ₹5,00,000 / year per family",
     color: "from-emerald-500/20 to-teal-500/10 text-emerald-300 border-emerald-500/30",
   },
   {
-    id: "nyc-scrie-001",
-    name: "SCRIE Senior Rent Freeze",
-    badge: "Housing / Seniors 62+",
-    highlight: "Freezes rent permanently against increases",
+    id: "in-pds-001",
+    name: "NFSA / PDS Food Ration Card",
+    badge: "Food & Nutrition (India)",
+    highlight: "Subsidized & free food grains across all Fair Price Shops",
+    color: "from-amber-500/20 to-orange-500/10 text-amber-300 border-amber-500/30",
+  },
+  {
+    id: "in-pmkisan-001",
+    name: "PM-KISAN Samman Nidhi",
+    badge: "Rural / Farmers",
+    highlight: "Direct income transfer ₹6,000 / year in 3 installments",
     color: "from-blue-500/20 to-indigo-500/10 text-blue-300 border-blue-500/30",
+  },
+  {
+    id: "nyc-snap-001",
+    name: "SNAP (Food Stamps)",
+    badge: "Food & Nutrition (US)",
+    highlight: "Monthly grocery allowance loaded onto electronic EBT card",
+    color: "from-teal-500/20 to-cyan-500/10 text-teal-300 border-teal-500/30",
+  },
+  {
+    id: "in-mgnrega-001",
+    name: "MGNREGA Employment Guarantee",
+    badge: "Rural Employment",
+    highlight: "Statutory 100 days guaranteed wage employment per year",
+    color: "from-purple-500/20 to-pink-500/10 text-purple-300 border-purple-500/30",
   },
   {
     id: "nyc-drie-001",
     name: "DRIE Disability Rent Freeze",
     badge: "Disability / Rent Relief",
-    highlight: "Rent freeze for SSI/SSDI/VA recipients",
-    color: "from-purple-500/20 to-pink-500/10 text-purple-300 border-purple-500/30",
-  },
-  {
-    id: "nyc-one-shot-001",
-    name: "One-Shot Deal (HRA)",
-    badge: "Emergency Eviction Grant",
-    highlight: "Emergency grant preventing eviction & utility shutoff",
-    color: "from-amber-500/20 to-orange-500/10 text-amber-300 border-amber-500/30",
-  },
-  {
-    id: "nyc-cash-assist-001",
-    name: "Cash Assistance (CA)",
-    badge: "Financial Relief",
-    highlight: "Bi-weekly cash support for essential living costs",
-    color: "from-teal-500/20 to-cyan-500/10 text-teal-300 border-teal-500/30",
-  },
-  {
-    id: "nyc-heap-001",
-    name: "HEAP Heating & Energy Relief",
-    badge: "Utilities",
-    highlight: "Direct utility bill relief grants up to $1,000",
+    highlight: "Rent freeze protection for SSI/SSDI/VA disability recipients",
     color: "from-rose-500/20 to-orange-500/10 text-rose-300 border-rose-500/30",
   },
 ];
@@ -63,12 +63,12 @@ export const ProgramTicker: React.FC<ProgramTickerProps> = ({ onSelectProgram })
               {t("Available Aid Programs")}
             </span>
             <h3 className="text-2xl font-bold text-white mt-1">
-              {t("Top NYC Public Safety Net Benefits")}
+              {t("Featured National & Regional Aid Programs")}
             </h3>
           </div>
           <div className="text-xs text-slate-400 flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>{t("Statutory rules updated from official NYC Open Data")}</span>
+            <span>{t("Statutory rules verified from official government gazettes & Open Data")}</span>
           </div>
         </div>
 

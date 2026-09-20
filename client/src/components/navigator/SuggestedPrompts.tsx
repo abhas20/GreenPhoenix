@@ -8,10 +8,10 @@ interface SuggestedPromptsProps {
 }
 
 const PROMPTS = [
-  "I live in Brooklyn and fell behind on rent. Can I get emergency help?",
-  "Single parent in Queens with 2 kids, need SNAP food and cash assistance.",
-  "I am 65 living in Manhattan and my landlord is raising my rent.",
-  "I receive SSI disability benefits and need help with electric bills.",
+  "I live in Mumbai, earn ₹50,000/yr for family of 4, need Ayushman health & food ration.",
+  "Small farmer in Maharashtra with 2 acres cultivable land needing PM-KISAN & rural work.",
+  "Single parent in Brooklyn with 2 kids, income $24,000, need food stamps & rent relief.",
+  "I receive SSI disability benefits, live in Brooklyn, rent $1,400, need DRIE rent freeze.",
 ];
 
 export const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({

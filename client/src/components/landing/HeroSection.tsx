@@ -85,7 +85,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         {/* Hero Subtitle */}
         <p className="mt-5 text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed font-normal">
           {t(
-            "Behind on rent, facing eviction, or struggling with groceries? Talk to our empathetic, multilingual crisis agent. We match you to official NYC and State benefits using deterministic eligibility checks—with zero data selling and complete PII encryption."
+            "Behind on rent, facing eviction, needing healthcare, or struggling with groceries? Talk to our empathetic, multilingual crisis agent. We match you to official national, state, and regional aid programs across India, the US, and globally using deterministic eligibility checks—with zero data selling and complete PII encryption."
           )}
         </p>
 

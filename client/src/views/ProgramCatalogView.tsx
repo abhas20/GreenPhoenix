@@ -113,7 +113,7 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
           {t("Public Aid Programs Catalog")}
         </h1>
         <p className="text-sm text-slate-400 mt-1 max-w-3xl">
-          {t("Search over 50+ official NYC and New York State safety net programs. Every benefit includes statutory criteria evaluated deterministically without LLM hallucination.")}
+          {t("Search verified national, state, and regional safety net programs across India, the United States, UK, and Canada. Every benefit includes statutory criteria evaluated deterministically without LLM hallucination.")}
         </p>
       </div>
 
@@ -125,7 +125,7 @@ export const ProgramCatalogView: React.FC<{ initialProgramId?: string }> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t("Search aid by keyword (e.g. 'eviction rent grant', 'food groceries', 'disability freeze')...")}
+            placeholder={t("Search aid by keyword (e.g. 'Ayushman health', 'Ration card', 'eviction rent grant', 'food groceries', 'disability freeze')...")}
             className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-slate-900 border border-slate-700 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-inner"
           />
           {loading && (

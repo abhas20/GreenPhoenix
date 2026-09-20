@@ -7,6 +7,34 @@ export const ProfileFactSheet: React.FC<{ profile: ApplicantProfile }> = ({ prof
   const { t } = useLanguage();
   const hasMissing = profile.missing_critical_fields && profile.missing_critical_fields.length > 0;
 
+  const getCurrencySymbol = (currency?: string | null) => {
+    switch ((currency || "").toUpperCase()) {
+      case "INR":
+        return "₹";
+      case "GBP":
+        return "£";
+      case "EUR":
+        return "€";
+      default:
+        return "$";
+    }
+  };
+
+  const curr = getCurrencySymbol(profile.currency);
+
+  const formatLocation = () => {
+    const parts = [profile.city_district, profile.state_province, profile.country].filter(Boolean);
+    if (parts.length > 0) {
+      return parts.join(", ");
+    }
+    if (profile.borough) {
+      return profile.borough;
+    }
+    return null;
+  };
+
+  const locationText = formatLocation();
+
   return (
     <div className="space-y-4">
       {/* Missing critical prompt banner */}
@@ -37,10 +65,10 @@ export const ProfileFactSheet: React.FC<{ profile: ApplicantProfile }> = ({ prof
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-            <div className="text-[10px] text-slate-400 uppercase font-semibold">{t("Location / Borough")}</div>
+            <div className="text-[10px] text-slate-400 uppercase font-semibold">{t("Location / Region")}</div>
             <div className="font-bold text-slate-100 mt-0.5 capitalize">
-              {profile.borough ? (
-                t(profile.borough)
+              {locationText ? (
+                t(locationText)
               ) : (
                 <span className="text-amber-400 text-[11px] font-normal italic">{t("Needs clarification")}</span>
               )}
@@ -51,7 +79,7 @@ export const ProfileFactSheet: React.FC<{ profile: ApplicantProfile }> = ({ prof
             <div className="text-[10px] text-slate-400 uppercase font-semibold">{t("Annual Income")}</div>
             <div className="font-bold text-slate-100 mt-0.5">
               {profile.annual_income !== null && profile.annual_income !== undefined ? (
-                `$${profile.annual_income.toLocaleString()}`
+                `${curr}${profile.annual_income.toLocaleString()}`
               ) : (
                 <span className="text-amber-400 text-[11px] font-normal italic">{t("Needs clarification")}</span>
               )}
@@ -68,7 +96,9 @@ export const ProfileFactSheet: React.FC<{ profile: ApplicantProfile }> = ({ prof
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800">
             <div className="text-[10px] text-slate-400 uppercase font-semibold">{t("Monthly Rent")}</div>
             <div className="font-bold text-slate-100 mt-0.5">
-              {profile.monthly_rent ? `$${profile.monthly_rent.toLocaleString()}` : t("Not reported")}
+              {profile.monthly_rent !== null && profile.monthly_rent !== undefined
+                ? `${curr}${profile.monthly_rent.toLocaleString()}`
+                : t("Not reported")}
             </div>
           </div>
 

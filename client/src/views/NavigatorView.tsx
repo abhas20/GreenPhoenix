@@ -28,14 +28,14 @@ import { ProfileFactSheet } from "../components/navigator/ProfileFactSheet";
 const INITIAL_WELCOME: SessionHistoryItem = {
   role: "assistant",
   content:
-    "Hello. I am your confidential Community Aid Navigator. I am here to help you find and apply for emergency housing, food, cash, and utility assistance in New York City.\n\nPlease describe your situation in your own words—whether you are behind on rent, lost income, or need help paying for groceries. All personal identifiers (names, phone numbers, addresses) are automatically encrypted before processing.",
+    "Hello. I am your confidential Community Aid Navigator. I am here to help you find and apply for emergency healthcare, food, housing, cash, and utility assistance across global, national, and regional aid programs (including India, the United States, UK, and Canada).\n\nPlease describe your situation in your own words—whether you need healthcare, are behind on rent, lost income, or need help paying for groceries. All personal identifiers (names, phone numbers, addresses) are automatically encrypted before processing.",
   timestamp: new Date().toISOString(),
 };
 
 const DEFAULT_PROFILE: ApplicantProfile = {
   preferred_language: "en",
   primary_needs: [],
-  missing_critical_fields: ["borough", "income"],
+  missing_critical_fields: ["location", "income"],
   summary: "New applicant",
 };
 
@@ -416,6 +416,37 @@ export const NavigatorView: React.FC = () => {
             {/* TAB 1: MATCHES */}
             {activeTab === "matches" && (
               <div className="space-y-4">
+                {/* Document Readiness Callout if Document Agent generated a draft */}
+                {docCount > 0 && (
+                  <div
+                    onClick={() => setActiveTab("checklist")}
+                    className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-transparent border border-emerald-500/30 flex items-center justify-between gap-3 cursor-pointer hover:border-emerald-500/50 transition-all shadow-md shadow-emerald-500/5"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 shrink-0">
+                        <FileCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <span>{t("Document Agent Checklist Ready")}</span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-slate-950 font-bold">
+                            {docCount} {t("documents")}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300">
+                          {t("Click to view personalized checklist & verification tips prepared for your confirmed programs.")}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="px-2.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold shrink-0 hover:bg-emerald-400 transition-colors"
+                    >
+                      {t("View Checklist")} →
+                    </button>
+                  </div>
+                )}
+
                 {matchCount > 0 ? (
                   <>
                     <div className="flex items-center justify-between text-xs text-slate-400">
@@ -440,7 +471,7 @@ export const NavigatorView: React.FC = () => {
                     </div>
                     <h4 className="text-base font-bold text-white">{t("Live Matches Will Appear Here")}</h4>
                     <p className="text-xs max-w-sm mx-auto leading-relaxed text-slate-400">
-                      {t("As you converse with the assistant on the left, our deterministic matching agent will investigate NYC aid databases and display verified benefits here.")}
+                      {t("As you converse with the assistant on the left, our deterministic matching agent will investigate national and regional aid databases and display verified benefits here.")}
                     </p>
                   </div>
                 )}

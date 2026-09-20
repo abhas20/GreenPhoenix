@@ -102,6 +102,7 @@ export const CORE_UI_STRINGS: string[] = [
   "GreenPhoenix Navigator",
   "You",
   "Hello. I am your confidential Community Aid Navigator. I am here to help you find and apply for emergency housing, food, cash, and utility assistance in New York City.",
+  "Hello. I am your confidential Community Aid Navigator. I am here to help you find and apply for emergency healthcare, food, housing, cash, and utility assistance across global, national, and regional aid programs (including India, the United States, UK, and Canada).",
   "Please describe your situation in your own words—whether you are behind on rent, lost income, or need help paying for groceries. All personal identifiers (names, phone numbers, addresses) are automatically encrypted before processing.",
   "I need help with rent arrears",
   "Facing eviction notice",
