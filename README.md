@@ -1,7 +1,7 @@
 <div align="center">
 
 # 🪽 GreenPhoenix: Global Community Aid Navigator
-### *Intelligent, Privacy-First, Multi-Agent Public Assistance Navigation & Civil-Rights Fairness Platform*
+### *Intelligent, Privacy-First, Multi-Agent Public Assistance Navigation for people in crisis*
 
 
 <p align="center">

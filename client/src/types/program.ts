@@ -73,9 +73,13 @@ export interface EligibilityCheckRequest {
 
 export interface EligibilityCheckResponse {
   program_id: string;
-  is_eligible: boolean;
-  evaluation_mode: string;
-  reasons: string[];
-  passed_criteria: string[];
-  failing_criteria: string[];
+  is_eligible?: boolean | null;
+  eligible?: boolean | null;
+  evaluation_mode?: string;
+  reasons?: string[];
+  passed_criteria?: string[];
+  passed_checks?: string[];
+  failing_criteria?: string[];
+  failing_reasons?: string[];
+  unverifiable_checks?: string[];
 }

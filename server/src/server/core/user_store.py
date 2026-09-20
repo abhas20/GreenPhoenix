@@ -3,6 +3,7 @@ import datetime
 import logging
 from typing import Optional, Dict, Any
 import bcrypt
+import os
 import boto3
 from botocore.exceptions import ClientError
 

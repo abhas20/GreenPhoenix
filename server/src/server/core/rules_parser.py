@@ -157,10 +157,15 @@ def parse_deterministic_rules(row: Dict[str, Any]) -> Dict[str, Any]:
             return True
         return False
 
+    disability_required = bool(
+        "disability" in name.lower() or
+        "drie" in name.lower() or
+        re.search(r"\b(?:requires disability|qualifying disability benefit|disability rent|disability exemption|severe disability|disability pension)\b", full_text)
+    )
     req_disability = _resolve_bool(
         "requires_disability_benefit",
-        any(k in full_text for k in ["disability benefit", "disability medicaid", "ssi", "ssdi", "va disability"]),
-        "inferred from disability/SSI mentions"
+        disability_required,
+        "inferred from disability requirement keywords"
     )
 
     req_children = _resolve_bool(

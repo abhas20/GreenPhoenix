@@ -97,6 +97,16 @@ def check_program_eligibility(
     program_name = src.get("name", program_id)
     rules_need_review = bool(rules.get("needs_review", False))
 
+    program_region = str(src.get("region", "")).lower()
+    if "india" in program_region or program_id.startswith("in-"):
+        curr_sym = "₹"
+    elif "uk" in program_region or program_id.startswith("uk-"):
+        curr_sym = "£"
+    elif "canada" in program_region or program_id.startswith("ca-"):
+        curr_sym = "CA$"
+    else:
+        curr_sym = "$"
+
     failing_reasons: List[str] = []
     passed_checks: List[str] = []
     unverifiable_checks: List[str] = []
@@ -123,9 +133,9 @@ def check_program_eligibility(
         if annual_income is None:
             unverifiable_checks.append("Program has an income cap, but applicant's income was not provided.")
         elif annual_income > max_income:
-            failing_reasons.append(f"Income ${annual_income:,.0f} exceeds maximum threshold of ${max_income:,.0f}.")
+            failing_reasons.append(f"Income {curr_sym}{annual_income:,.0f} exceeds maximum threshold of {curr_sym}{max_income:,.0f}.")
         else:
-            passed_checks.append(f"Income ${annual_income:,.0f} is within limit of ${max_income:,.0f}.")
+            passed_checks.append(f"Income {curr_sym}{annual_income:,.0f} is within limit of {curr_sym}{max_income:,.0f}.")
 
     # 4. Minimum age
     min_age = rules.get("min_age")
@@ -233,10 +243,14 @@ def check_program_eligibility(
 
     return {
         "eligible": is_eligible,
+        "is_eligible": is_eligible,
         "program_id": program_id,
         "program_name": program_name,
         "passed_checks": passed_checks,
+        "passed_criteria": passed_checks,
         "failing_reasons": failing_reasons,
+        "failing_criteria": failing_reasons,
+        "reasons": failing_reasons,
         "unverifiable_checks": unverifiable_checks,
         "rules_need_review": rules_need_review,
     }
